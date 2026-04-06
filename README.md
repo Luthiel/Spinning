@@ -1,202 +1,202 @@
-# Spinning — Skill 编排平台
+# Spinning — Skill Orchestration Platform
 
-面向多开发者协作场景的 Skill 编排工具，解决不同开发者开发的 Skill 之间的**冲突解决、权责归属、流程编排**（串行、并行、条件判断）问题。
+A skill orchestration tool for multi-developer collaboration, solving **conflict resolution, ownership attribution, and workflow orchestration** (serial, parallel, conditional) between skills developed by different developers.
 
-## 功能特性
+## Features
 
-| 功能 | 说明 |
-|------|------|
-| 可视化拖拽编排 | 基于 ReactFlow 的画布，支持从侧边面板拖拽 Skill 到画布，通过连线定义流程 |
-| 多节点类型 | Skill 节点、条件节点（菱形）、并行网关（fork/join）、起点/终点 |
-| 节点状态 & 统计 | 每个节点展示运行状态指示灯（idle/running/success/error）和累计调用次数 |
-| Prompt 自然语言编排 | 输入自然语言描述，LLM 解析后自动生成 DAG 流程 |
-| Skill 聚类排名 | 按 category 聚类 + 调用频次/capability 综合排名 |
-| 冲突检测 & 解决推荐 | 实时检测节点间冲突（输入重叠、输出冲突、能力重复、资源竞争），推荐解决方案 |
-| 格式化模板 | 预置 4 个编排模板（NLP Pipeline、审批流、爬取摘要、ETL），支持保存自定义模板 |
-| 流程执行引擎 | Go DAG 执行引擎，支持 goroutine 并行分支调度 + 条件分支 |
-| 实时状态推送 | WebSocket 实时推送节点执行状态和日志 |
-| MCP 协议兼容 | Skill 定义兼容 MCP（Model Context Protocol）格式 |
+| Feature | Description |
+|---------|-------------|
+| Visual Drag-and-Drop Orchestration | Canvas based on ReactFlow — drag skills from the sidebar to the canvas and define flows by connecting nodes |
+| Multiple Node Types | Skill nodes, condition nodes (diamond), parallel gates (fork/join), start/end nodes |
+| Node Status & Stats | Each node displays a status indicator (idle/running/success/error) and cumulative call count |
+| Prompt-based Natural Language Orchestration | Enter natural language descriptions; LLM parses and auto-generates a DAG workflow |
+| Skill Clustering & Ranking | Cluster by category + rank by call frequency and capability coverage |
+| Conflict Detection & Resolution Recommendations | Real-time detection of conflicts between nodes (input overlap, output conflict, capability duplication, resource contention) with recommended resolutions |
+| Flow Templates | 4 built-in templates (NLP Pipeline, Approval Flow, Scrape & Summarize, ETL Pipeline) with support for custom templates |
+| Flow Execution Engine | Go DAG execution engine with goroutine-based parallel branch scheduling and conditional branching |
+| Real-time Status Push | WebSocket-based real-time push of node execution status and logs |
+| MCP Protocol Compatibility | Skill definitions compatible with MCP (Model Context Protocol) format |
 
-## 技术栈
+## Tech Stack
 
-### 前端
+### Frontend
 
-| 技术 | 版本 | 用途 |
-|------|------|------|
-| React | 19.x | UI 框架 |
-| TypeScript | 5.9 | 类型安全 |
-| Vite | 8.x | 构建工具 |
-| ReactFlow (`@xyflow/react`) | 12.x | 画布/节点编排 |
-| Tailwind CSS | 3.4 | 样式系统 |
-| Radix UI | - | 无障碍 UI 原语 |
-| Zustand | 5.x | 状态管理 |
-| Axios | 1.x | HTTP 客户端 |
-| dagre (`@dagrejs/dagre`) | 3.x | DAG 自动布局 |
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| React | 19.x | UI framework |
+| TypeScript | 5.9 | Type safety |
+| Vite | 8.x | Build tool |
+| ReactFlow (`@xyflow/react`) | 12.x | Canvas / node orchestration |
+| Tailwind CSS | 3.4 | Styling system |
+| Radix UI | — | Accessible UI primitives |
+| Zustand | 5.x | State management |
+| Axios | 1.x | HTTP client |
+| dagre (`@dagrejs/dagre`) | 3.x | DAG auto-layout |
 
-### 后端
+### Backend
 
-| 技术 | 版本 | 用途 |
-|------|------|------|
-| Go | 1.23 | 运行时 |
-| Gin | 1.10 | HTTP 框架 |
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| Go | 1.23 | Runtime |
+| Gin | 1.10 | HTTP framework |
 | GORM | 1.25 | ORM |
-| SQLite (`glebarez/sqlite`) | - | 纯 Go 实现，无需 CGO |
-| gorilla/websocket | 1.5 | 实时通信 |
+| SQLite (`glebarez/sqlite`) | — | Pure Go implementation, no CGO required |
+| gorilla/websocket | 1.5 | Real-time communication |
 
-## 项目结构
+## Project Structure
 
 ```
 Spinning/
 ├── Makefile
 ├── LICENSE
 ├── README.md
-├── frontend/                          # React 前端
+├── frontend/                          # React frontend
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── Canvas/                # ReactFlow 画布
-│   │   │   │   ├── FlowCanvas.tsx     # 主画布
-│   │   │   │   ├── CanvasToolbar.tsx  # 工具栏（保存/执行/布局/模板/导出）
-│   │   │   │   ├── NodeDetailPanel.tsx# 节点详情面板
-│   │   │   │   ├── nodes/             # 自定义节点
-│   │   │   │   │   ├── SkillNode.tsx        # Skill 节点（状态灯+调用次数）
-│   │   │   │   │   ├── ConditionNode.tsx    # 条件节点（菱形）
-│   │   │   │   │   ├── GatewayNode.tsx      # 并行网关（fork/join）
-│   │   │   │   │   └── StartEndNode.tsx     # 起点/终点
+│   │   │   ├── Canvas/                # ReactFlow canvas
+│   │   │   │   ├── FlowCanvas.tsx     # Main canvas
+│   │   │   │   ├── CanvasToolbar.tsx  # Toolbar (save/execute/layout/template/export)
+│   │   │   │   ├── NodeDetailPanel.tsx# Node detail panel
+│   │   │   │   ├── nodes/             # Custom nodes
+│   │   │   │   │   ├── SkillNode.tsx        # Skill node (status light + call count)
+│   │   │   │   │   ├── ConditionNode.tsx    # Condition node (diamond)
+│   │   │   │   │   ├── GatewayNode.tsx      # Parallel gateway (fork/join)
+│   │   │   │   │   └── StartEndNode.tsx     # Start/End nodes
 │   │   │   │   └── edges/
-│   │   │   │       └── CustomEdge.tsx       # 自定义连线（串行/并行/条件）
+│   │   │   │       └── CustomEdge.tsx       # Custom edges (serial/parallel/conditional)
 │   │   │   ├── Panel/
-│   │   │   │   ├── SkillPanel.tsx     # Skill 列表（搜索/过滤/拖拽）
-│   │   │   │   ├── SkillClusterView.tsx # 聚类视图
-│   │   │   │   └── SkillRankingView.tsx # 排名视图
+│   │   │   │   ├── SkillPanel.tsx     # Skill list (search/filter/drag)
+│   │   │   │   ├── SkillClusterView.tsx # Cluster view
+│   │   │   │   └── SkillRankingView.tsx # Ranking view
 │   │   │   ├── Prompt/
-│   │   │   │   └── PromptInput.tsx    # 自然语言编排输入
+│   │   │   │   └── PromptInput.tsx    # Natural language orchestration input
 │   │   │   ├── Conflict/
-│   │   │   │   └── ConflictPanel.tsx  # 冲突检测 & 解决方案选择
+│   │   │   │   └── ConflictPanel.tsx  # Conflict detection & resolution selection
 │   │   │   ├── Execution/
-│   │   │   │   ├── ExecutionPanel.tsx # 执行控制面板 + 日志
-│   │   │   │   └── TemplateSelector.tsx # 模板选择器
-│   │   │   └── ui/                    # 基础 UI 组件（shadcn 风格）
+│   │   │   │   ├── ExecutionPanel.tsx # Execution control panel + logs
+│   │   │   │   └── TemplateSelector.tsx # Template selector
+│   │   │   └── ui/                    # Base UI components (shadcn style)
 │   │   ├── store/
-│   │   │   ├── flowStore.ts           # 编排流程状态
-│   │   │   ├── skillStore.ts          # Skill 列表状态
-│   │   │   └── executionStore.ts      # 执行状态
+│   │   │   ├── flowStore.ts           # Flow orchestration state
+│   │   │   ├── skillStore.ts          # Skill list state
+│   │   │   └── executionStore.ts      # Execution state
 │   │   ├── services/
-│   │   │   ├── api.ts                 # REST API 客户端
-│   │   │   └── websocket.ts           # WebSocket 客户端
+│   │   │   ├── api.ts                 # REST API client
+│   │   │   └── websocket.ts           # WebSocket client
 │   │   ├── types/
-│   │   │   └── index.ts               # 全量类型定义
+│   │   │   └── index.ts               # Full type definitions
 │   │   └── utils/
-│   │       └── dagLayout.ts           # Dagre 自动布局算法
+│   │       └── dagLayout.ts           # Dagre auto-layout algorithm
 │   ├── package.json
 │   └── vite.config.ts
-├── backend/                           # Go 后端
-│   ├── cmd/server/main.go             # 入口
+├── backend/                           # Go backend
+│   ├── cmd/server/main.go             # Entry point
 │   ├── internal/
 │   │   ├── api/
-│   │   │   ├── router.go              # 路由注册（22 个端点）
+│   │   │   ├── router.go              # Route registration (22 endpoints)
 │   │   │   └── handler/
-│   │   │       ├── skill.go           # Skill CRUD + 聚类 + 排名
-│   │   │       ├── flow.go            # Flow CRUD + 导出 + 生成 + 执行 + WS
-│   │   │       └── conflict.go        # 冲突检测
+│   │   │       ├── skill.go           # Skill CRUD + clustering + ranking
+│   │   │       ├── flow.go            # Flow CRUD + export + generate + execute + WS
+│   │   │       └── conflict.go        # Conflict detection
 │   │   ├── model/
-│   │   │   ├── skill.go               # Skill/Cluster/Ranking 模型
-│   │   │   ├── flow.go                # Flow/Node/Edge/Template 模型
-│   │   │   └── conflict.go            # ConflictReport 模型
+│   │   │   ├── skill.go               # Skill/Cluster/Ranking models
+│   │   │   ├── flow.go                # Flow/Node/Edge/Template models
+│   │   │   └── conflict.go            # ConflictReport model
 │   │   ├── service/
-│   │   │   ├── skill_service.go       # Skill 业务逻辑
-│   │   │   ├── flow_service.go        # Flow + 模板 CRUD
-│   │   │   ├── conflict_service.go    # 冲突检测 & 推荐
-│   │   │   ├── llm_service.go         # LLM Prompt→DAG 生成
+│   │   │   ├── skill_service.go       # Skill business logic
+│   │   │   ├── flow_service.go        # Flow + template CRUD
+│   │   │   ├── conflict_service.go    # Conflict detection & recommendations
+│   │   │   ├── llm_service.go         # LLM prompt → DAG generation
 │   │   │   └── engine/
-│   │   │       ├── executor.go        # DAG 执行引擎（并行调度）
-│   │   │       └── ws_hub.go          # WebSocket 广播
+│   │   │       ├── executor.go        # DAG executor (parallel scheduling)
+│   │   │       └── ws_hub.go          # WebSocket broadcast hub
 │   │   └── db/
-│   │       ├── database.go            # SQLite 初始化
-│   │       └── seed.go                # 12 个示例 Skill + 4 个模板
+│   │       ├── database.go            # SQLite initialization
+│   │       └── seed.go                # 12 demo skills + 4 templates
 │   └── go.mod
 ```
 
-## 快速开始
+## Getting Started
 
-### 前置要求
+### Prerequisites
 
 - Node.js ≥ 20
 - Go ≥ 1.23
 
-### 启动开发环境
+### Start Development Environment
 
 ```bash
-# 1. 安装前端依赖
+# 1. Install frontend dependencies
 cd frontend && npm install && cd ..
 
-# 2. 构建并启动后端
+# 2. Build and start backend
 cd backend
 go build -o bin/spinning ./cmd/server/main.go
-./bin/spinning                    # 后端运行在 :8080
+./bin/spinning                    # Backend runs on :8080
 
-# 3. 新终端启动前端
+# 3. Start frontend in a new terminal
 cd frontend
-npm run dev                       # 前端运行在 :5173，自动代理 /api 到 :8080
+npm run dev                       # Frontend runs on :5173, proxies /api to :8080
 ```
 
-或使用 Makefile 一键启动：
+Or use the Makefile for one-command startup:
 
 ```bash
-make install-frontend              # 安装前端依赖
-make dev                           # 同时启动后端 + 前端
+make install-frontend              # Install frontend dependencies
+make dev                           # Start backend + frontend concurrently
 ```
 
-### 构建生产版本
+### Production Build
 
 ```bash
-make build                         # 构建前端 (dist/) + 后端 (bin/spinning)
+make build                         # Build frontend (dist/) + backend (bin/spinning)
 ```
 
-### 环境变量
+### Environment Variables
 
-后端支持通过环境变量配置：
+The backend supports configuration via environment variables:
 
 ```bash
-LLM_API_KEY=sk-...                # LLM API Key（不设则使用 mock 生成）
-LLM_BASE_URL=https://api.openai.com/v1  # LLM API 地址
-LLM_MODEL=gpt-4o-mini             # LLM 模型名
-DB_PATH=./data/spinning.db        # SQLite 数据库路径
-PORT=8080                         # 后端端口
+LLM_API_KEY=sk-...                # LLM API key (falls back to mock generation if not set)
+LLM_BASE_URL=https://api.openai.com/v1  # LLM API base URL
+LLM_MODEL=gpt-4o-mini             # LLM model name
+DB_PATH=./data/spinning.db        # SQLite database path
+PORT=8080                         # Backend port
 ```
 
-## API 端点
+## API Endpoints
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| `GET` | `/api/skills` | 获取 Skill 列表（支持 `?search=&category=&sort=`） |
-| `GET` | `/api/skills/:id` | 获取 Skill 详情 |
-| `POST` | `/api/skills` | 创建 Skill |
-| `PUT` | `/api/skills/:id` | 更新 Skill |
-| `DELETE` | `/api/skills/:id` | 删除 Skill |
-| `GET` | `/api/skills/clusters` | 获取聚类结果 |
-| `GET` | `/api/skills/rankings` | 获取排名 |
-| `GET` | `/api/flows` | 获取 Flow 列表 |
-| `POST` | `/api/flows` | 创建 Flow |
-| `GET` | `/api/flows/:id` | 获取 Flow（含 nodes + edges） |
-| `PUT` | `/api/flows/:id` | 更新 Flow（nodes + edges 整体替换） |
-| `DELETE` | `/api/flows/:id` | 删除 Flow |
-| `POST` | `/api/flows/:id/export` | 导出 Flow 为 JSON / YAML |
-| `POST` | `/api/flows/generate` | Prompt 自然语言 → DAG |
-| `POST` | `/api/flows/:id/execute` | 执行 Flow（返回 execution_id） |
-| `GET` | `/api/templates` | 获取模板列表 |
-| `POST` | `/api/templates` | 创建模板 |
-| `GET` | `/api/templates/:id` | 获取模板 |
-| `DELETE` | `/api/templates/:id` | 删除模板 |
-| `POST` | `/api/conflicts/detect` | 检测冲突 |
-| `POST` | `/api/conflicts/:id/resolve` | 应用冲突解决方案 |
-| `WS` | `/ws/execution/:id` | 实时执行状态推送 |
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/skills` | List skills (supports `?search=&category=&sort=`) |
+| `GET` | `/api/skills/:id` | Get skill details |
+| `POST` | `/api/skills` | Create a skill |
+| `PUT` | `/api/skills/:id` | Update a skill |
+| `DELETE` | `/api/skills/:id` | Delete a skill |
+| `GET` | `/api/skills/clusters` | Get clustering results |
+| `GET` | `/api/skills/rankings` | Get rankings |
+| `GET` | `/api/flows` | List flows |
+| `POST` | `/api/flows` | Create a flow |
+| `GET` | `/api/flows/:id` | Get flow (with nodes + edges) |
+| `PUT` | `/api/flows/:id` | Update flow (replaces nodes + edges) |
+| `DELETE` | `/api/flows/:id` | Delete a flow |
+| `POST` | `/api/flows/:id/export` | Export flow as JSON / YAML |
+| `POST` | `/api/flows/generate` | Natural language prompt → DAG |
+| `POST` | `/api/flows/:id/execute` | Execute a flow (returns execution_id) |
+| `GET` | `/api/templates` | List templates |
+| `POST` | `/api/templates` | Create a template |
+| `GET` | `/api/templates/:id` | Get template |
+| `DELETE` | `/api/templates/:id` | Delete a template |
+| `POST` | `/api/conflicts/detect` | Detect conflicts |
+| `POST` | `/api/conflicts/:id/resolve` | Apply a conflict resolution |
+| `WS` | `/ws/execution/:id` | Real-time execution status push |
 
-## 内置数据
+## Seed Data
 
-启动后自动灌入 12 个示例 Skill：
+The database is automatically seeded with 12 demo skills on first launch:
 
-| Skill | 类别 | 能力 |
-|-------|------|------|
+| Skill | Category | Capabilities |
+|-------|----------|-------------|
 | Text Translator | nlp, transform | translation, multilingual |
 | Sentiment Analyzer | nlp, ai | sentiment-analysis, emotion-detection |
 | Keyword Extractor | nlp | keyword-extraction, ner |
@@ -210,7 +210,7 @@ PORT=8080                         # 后端端口
 | Input Validator | data | validation, schema-check |
 | Web Scraper | data, search | web-scraping, html-parsing |
 
-以及 4 个预置编排模板：NLP Pipeline、审批流、爬取摘要、ETL Pipeline。
+Plus 4 built-in orchestration templates: NLP Pipeline, Approval Flow, Scrape & Summarize, and ETL Pipeline.
 
 ## License
 
