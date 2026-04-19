@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  Settings, Save, Play, Download, Upload, LayoutTemplate, Wand2,
+  Save, Play, Download, Upload, LayoutTemplate, Wand2,
   GitBranch, GitFork, GitMerge, Plus, AlertTriangle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -12,11 +12,7 @@ import { applyDagreLayout } from '@/utils/dagLayout'
 import type { FlowNodeRecord, FlowEdgeRecord } from '@/types'
 import type { FlowNode, FlowEdge } from '@/store/flowStore'
 
-export interface CanvasToolbarProps {
-  onSettingsClick?: () => void
-}
-
-export function CanvasToolbar({ onSettingsClick }: CanvasToolbarProps) {
+export function CanvasToolbar() {
   const {
     flowId, flowName, nodes, edges, isDirty,
     setNodes, setEdges, setFlowId, setIsDirty,
@@ -110,15 +106,6 @@ export function CanvasToolbar({ onSettingsClick }: CanvasToolbarProps) {
 
   return (
     <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl shadow-sm px-2 py-1.5">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon-sm" aria-label="Settings" onClick={onSettingsClick}>
-            <Settings className="h-4 w-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Settings</TooltipContent>
-      </Tooltip>
-
       <FlowNameEditor />
 
       <div className="w-px h-5 bg-slate-200 mx-1" />

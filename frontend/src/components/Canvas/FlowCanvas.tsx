@@ -11,7 +11,11 @@ import {
   type NodeMouseHandler,
   type EdgeMouseHandler,
 } from '@xyflow/react'
+import { Settings } from 'lucide-react'
 import '@xyflow/react/dist/style.css'
+
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 import { useFlowStore } from '@/store/flowStore'
 import { useSkillStore } from '@/store/skillStore'
@@ -154,7 +158,17 @@ export function FlowCanvas({ onSettingsClick }: FlowCanvasProps) {
 
         {/* Top toolbar panel */}
         <Panel position="top-center">
-          <CanvasToolbar onSettingsClick={onSettingsClick} />
+          <div className="flex items-center gap-2">
+            <CanvasToolbar />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon-sm" aria-label="Settings" onClick={onSettingsClick}>
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Settings</TooltipContent>
+            </Tooltip>
+          </div>
         </Panel>
 
         {/* Bottom PromptInput panel */}

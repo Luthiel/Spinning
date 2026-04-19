@@ -125,7 +125,7 @@ export function PromptInput() {
 
   if (!open) {
     return (
-      <div className="border-t border-slate-200 bg-white p-2">
+      <div className="rounded-xl border-t border-slate-200 bg-white p-2">
         <button
           onClick={() => { setOpen(true); setTimeout(() => textareaRef.current?.focus(), 50) }}
           className="w-80 flex items-center gap-2 px-3 py-2 rounded-xl border border-dashed border-slate-300 bg-white shadow-sm hover:border-blue-300 hover:bg-blue-50/50 transition-colors text-left"
