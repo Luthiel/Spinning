@@ -6,6 +6,7 @@ import { PromptInput } from '@/components/Prompt/PromptInput'
 import { ConflictPanel } from '@/components/Conflict/ConflictPanel'
 import { ExecutionPanel } from '@/components/Execution/ExecutionPanel'
 import { TemplateSelector } from '@/components/Execution/TemplateSelector'
+import { SettingsPanel } from '@/components/Settings/SettingsPanel'
 
 function App() {
   return (
@@ -15,7 +16,6 @@ function App() {
           {/* Left panel: Skill list + prompt input */}
           <div className="flex flex-col h-full flex-shrink-0">
             <SkillPanel />
-            <PromptInput />
           </div>
 
           {/* Main canvas area */}
@@ -25,6 +25,9 @@ function App() {
             <ExecutionPanel />
             <TemplateSelector />
           </div>
+
+          {/* Settings panel (floating) */}
+          <SettingsPanel />
         </div>
       </ReactFlowProvider>
     </TooltipProvider>
