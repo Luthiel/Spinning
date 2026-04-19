@@ -127,14 +127,14 @@ func (s *SkillSyncService) parseSkillFromDirectory(dirPath string) (*model.Skill
 	}
 
 	skill := &model.Skill{
-		ID:          fmt.Sprintf("opencode-%s", strings.ToLower(strings.ReplaceAll(skillName, " ", "-"))),
-		Name:        skillName,
-		Version:     "1.0.0",
-		Author:      "OpenCode",
-		Status:      "active",
-		Source:      "opencode",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		ID:        fmt.Sprintf("opencode-%s", strings.ToLower(strings.ReplaceAll(skillName, " ", "-"))),
+		Name:      skillName,
+		Version:   "1.0.0",
+		Author:    "OpenCode",
+		Status:    "active",
+		Source:    "opencode",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	descriptionFile := readFile("README.md")
@@ -143,10 +143,12 @@ func (s *SkillSyncService) parseSkillFromDirectory(dirPath string) (*model.Skill
 		if idx := strings.Index(content, "\n"); idx > 0 {
 			skill.Description = strings.TrimSpace(content[:idx])
 		} else {
-			skill.Description = content
+			skill.Description = strings.TrimSpace(content)
 		}
-		if len(descriptionFile) > 500 {
-			skill.Description = string(descriptionFile[:500])
+		// Truncate to 500 runes (UTF-8 safe)
+		if len([]rune(skill.Description)) > 500 {
+			r := []rune(skill.Description)
+			skill.Description = string(r[:500])
 		}
 	}
 
@@ -205,11 +207,11 @@ func (s *SkillSyncService) GetSource() string {
 }
 
 type ExternalSkillSource struct {
-	Name     string   `json:"name"`
-	Type     string   `json:"type"`
-	Path     string   `json:"path"`
-	SKillCount int    `json:"skill_count"`
-	AutoSync bool     `json:"auto_sync"`
+	Name       string `json:"name"`
+	Type       string `json:"type"`
+	Path       string `json:"path"`
+	SkillCount int    `json:"skill_count"`
+	AutoSync   bool   `json:"auto_sync"`
 }
 
 func (s *SkillSyncService) ListExternalSources() []ExternalSkillSource {
@@ -222,7 +224,7 @@ func (s *SkillSyncService) ListExternalSources() []ExternalSkillSource {
 			Name:       "OpenCode",
 			Type:       "opencode",
 			Path:       p,
-			SKillCount: count,
+			SkillCount: count,
 			AutoSync:   true,
 		})
 	}

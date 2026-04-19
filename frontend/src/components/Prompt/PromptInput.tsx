@@ -36,7 +36,7 @@ export function PromptInput() {
 
   const { setNodes, setEdges, flowId } = useFlowStore()
   const { skills } = useSkillStore()
-  const { selectedProvider, defaultFallback } = useProviderStore()
+  const { selectedProvider } = useProviderStore()
 
   const fallbackOptions: FallbackOption[] = [
     { provider: 'openai', label: 'OpenAI', icon: Bot, description: 'Use OpenAI API' },

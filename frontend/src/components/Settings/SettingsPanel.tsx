@@ -81,7 +81,7 @@ export function SettingsPanel({ isOpen: controlledIsOpen, onOpenChange }: Settin
               </Button>
             </div>
 
-            <ScrollArea className="h-[calc(80vh-60px)]">
+            <ScrollArea className="h-[calc(80vh_-_60px)]">
               <div className="p-6 space-y-6">
                 {/* Provider Selection */}
                 <Card>

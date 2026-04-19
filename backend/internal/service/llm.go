@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"os"
+	"sync"
 
 	"spinning/backend/internal/model"
 )
@@ -43,21 +44,31 @@ func NewLLMService() *LLMService {
 
 type LLMService struct {
 	provider LLMProvider
+	m        sync.RWMutex
 }
 
 func (l *LLMService) Generate(ctx context.Context, req GenerateRequest, skills []model.Skill) (*GenerateResponse, error) {
-	return l.provider.Generate(ctx, req, skills)
+	l.m.RLock()
+	p := l.provider
+	l.m.RUnlock()
+	return p.Generate(ctx, req, skills)
 }
 
 func (l *LLMService) GetProviderType() ProviderType {
+	l.m.RLock()
+	defer l.m.RUnlock()
 	return l.provider.GetProviderType()
 }
 
 func (l *LLMService) GetProviderName() string {
+	l.m.RLock()
+	defer l.m.RUnlock()
 	return l.provider.GetName()
 }
 
 func (l *LLMService) IsConfigured() bool {
+	l.m.RLock()
+	defer l.m.RUnlock()
 	return l.provider.IsConfigured()
 }
 
@@ -69,9 +80,12 @@ func (l *LLMService) SetProvider(providerType ProviderType) error {
 	case ProviderOpenAI:
 		provider = NewOpenAIProvider()
 	default:
-		provider = NewMockProvider()
+		// Unknown provider: default to OpenAI to mirror NewLLMService behavior
+		provider = NewOpenAIProvider()
 	}
+	l.m.Lock()
 	l.provider = provider
+	l.m.Unlock()
 	return nil
 }
 
@@ -104,9 +118,9 @@ func GetAvailableProviders() []ProviderConfig {
 			Timeout: 120,
 		},
 		{
-			Type:   ProviderMock,
-			Name:   "Mock Generator",
-			Model:  "mock",
+			Type:    ProviderMock,
+			Name:    "Mock Generator",
+			Model:   "mock",
 			Timeout: 5,
 		},
 	}

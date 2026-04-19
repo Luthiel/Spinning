@@ -14,10 +14,10 @@ import (
 )
 
 type OpenCodeProvider struct {
-	cliPath       string
-	timeout       time.Duration
-	defaultModel  string
-	configPath    string
+	cliPath      string
+	timeout      time.Duration
+	defaultModel string
+	configPath   string
 }
 
 func NewOpenCodeProvider() *OpenCodeProvider {
@@ -86,6 +86,14 @@ func (p *OpenCodeProvider) Generate(ctx context.Context, req GenerateRequest, sk
 
 	skillContext := buildSkillContext(skills)
 	combinedPrompt := fmt.Sprintf("%s\n\nAvailable Skills:\n%s", req.Prompt, skillContext)
+	// enforce provider timeout if the incoming context has no earlier deadline
+	var cancel context.CancelFunc
+	if dl, ok := ctx.Deadline(); !ok || time.Until(dl) > p.timeout {
+		ctx, cancel = context.WithTimeout(ctx, p.timeout)
+	} else {
+		cancel = func() {}
+	}
+	defer cancel()
 
 	cmd := exec.CommandContext(ctx, p.cliPath, "generate", "--prompt", combinedPrompt, "--format", "json")
 	if p.defaultModel != "" {
@@ -105,16 +113,21 @@ func (p *OpenCodeProvider) parseOutput(output string, skills []model.Skill) (*Ge
 
 	if strings.HasPrefix(content, "```") {
 		lines := strings.Split(content, "\n")
-		if len(lines) > 2 {
-			content = strings.Join(lines[1:len(lines)-1], "\n")
+		startIdx := 1
+		endIdx := len(lines)
+		if endIdx > 0 && strings.HasPrefix(strings.TrimSpace(lines[endIdx-1]), "```") {
+			endIdx--
+		}
+		if endIdx > startIdx {
+			content = strings.Join(lines[startIdx:endIdx], "\n")
 		}
 	}
 
 	var result struct {
 		Nodes       []model.FlowNode `json:"nodes"`
-		Edges       []model.FlowEdge  `json:"edges"`
-		Explanation string            `json:"explanation"`
-		Confidence  float64           `json:"confidence"`
+		Edges       []model.FlowEdge `json:"edges"`
+		Explanation string           `json:"explanation"`
+		Confidence  float64          `json:"confidence"`
 	}
 
 	if err := json.Unmarshal([]byte(content), &result); err != nil {

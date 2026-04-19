@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"gorm.io/gorm"
 	"gopkg.in/yaml.v3"
+	"gorm.io/gorm"
 
 	"spinning/backend/internal/model"
 )
@@ -218,7 +218,7 @@ type ValidationError struct {
 }
 
 type ValidationResult struct {
-	Valid  bool             `json:"valid"`
+	Valid  bool              `json:"valid"`
 	Errors []ValidationError `json:"errors"`
 }
 
@@ -226,6 +226,17 @@ func (s *FlowService) ValidateFlow(flow *model.Flow) *ValidationResult {
 	result := &ValidationResult{
 		Valid:  true,
 		Errors: []ValidationError{},
+	}
+
+	if flow == nil {
+		result.Valid = false
+		result.Errors = append(result.Errors, ValidationError{
+			NodeID:   "",
+			Type:     "flow_nil",
+			Message:  "flow is nil",
+			Severity: "high",
+		})
+		return result
 	}
 
 	nodeMap := make(map[string]bool)
@@ -237,8 +248,8 @@ func (s *FlowService) ValidateFlow(flow *model.Flow) *ValidationResult {
 				result.Valid = false
 				result.Errors = append(result.Errors, ValidationError{
 					NodeID:   node.ID,
-					Type:    "mcp_missing_server",
-					Message: "MCP node is missing server configuration",
+					Type:     "mcp_missing_server",
+					Message:  "MCP node is missing server configuration",
 					Severity: "high",
 				})
 			}
@@ -246,8 +257,8 @@ func (s *FlowService) ValidateFlow(flow *model.Flow) *ValidationResult {
 				result.Valid = false
 				result.Errors = append(result.Errors, ValidationError{
 					NodeID:   node.ID,
-					Type:    "mcp_missing_tool",
-					Message: "MCP node is missing tool configuration",
+					Type:     "mcp_missing_tool",
+					Message:  "MCP node is missing tool configuration",
 					Severity: "high",
 				})
 			}
@@ -257,8 +268,8 @@ func (s *FlowService) ValidateFlow(flow *model.Flow) *ValidationResult {
 			result.Valid = false
 			result.Errors = append(result.Errors, ValidationError{
 				NodeID:   node.ID,
-				Type:    "skill_missing_id",
-				Message: "Skill node is missing skill_id",
+				Type:     "skill_missing_id",
+				Message:  "Skill node is missing skill_id",
 				Severity: "high",
 			})
 		}
@@ -267,8 +278,8 @@ func (s *FlowService) ValidateFlow(flow *model.Flow) *ValidationResult {
 			result.Valid = false
 			result.Errors = append(result.Errors, ValidationError{
 				NodeID:   node.ID,
-				Type:    "condition_missing_expr",
-				Message: "Condition node is missing condition expression",
+				Type:     "condition_missing_expr",
+				Message:  "Condition node is missing condition expression",
 				Severity: "medium",
 			})
 		}
@@ -289,8 +300,8 @@ func (s *FlowService) ValidateFlow(flow *model.Flow) *ValidationResult {
 		result.Valid = false
 		result.Errors = append(result.Errors, ValidationError{
 			NodeID:   "",
-			Type:    "missing_start_node",
-			Message: "Flow must have a start node",
+			Type:     "missing_start_node",
+			Message:  "Flow must have a start node",
 			Severity: "high",
 		})
 	}
@@ -299,23 +310,19 @@ func (s *FlowService) ValidateFlow(flow *model.Flow) *ValidationResult {
 		result.Valid = false
 		result.Errors = append(result.Errors, ValidationError{
 			NodeID:   "",
-			Type:    "missing_end_node",
-			Message: "Flow must have an end node",
+			Type:     "missing_end_node",
+			Message:  "Flow must have an end node",
 			Severity: "high",
 		})
 	}
 
-	edgeMap := make(map[string]int)
 	for _, edge := range flow.Edges {
-		edgeMap[edge.Source]++
-		edgeMap[edge.Target]++
-
 		if !nodeMap[edge.Source] {
 			result.Valid = false
 			result.Errors = append(result.Errors, ValidationError{
 				NodeID:   edge.ID,
-				Type:    "invalid_edge_source",
-				Message: fmt.Sprintf("Edge references non-existent source node: %s", edge.Source),
+				Type:     "invalid_edge_source",
+				Message:  fmt.Sprintf("Edge references non-existent source node: %s", edge.Source),
 				Severity: "high",
 			})
 		}
@@ -323,8 +330,8 @@ func (s *FlowService) ValidateFlow(flow *model.Flow) *ValidationResult {
 			result.Valid = false
 			result.Errors = append(result.Errors, ValidationError{
 				NodeID:   edge.ID,
-				Type:    "invalid_edge_target",
-				Message: fmt.Sprintf("Edge references non-existent target node: %s", edge.Target),
+				Type:     "invalid_edge_target",
+				Message:  fmt.Sprintf("Edge references non-existent target node: %s", edge.Target),
 				Severity: "high",
 			})
 		}

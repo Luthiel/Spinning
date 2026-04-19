@@ -61,11 +61,7 @@
 5. `FlowCanvas.tsx`: Import PromptInput, add bottom-center Panel
 
 ### Testing Approach
-- Build verification: `cd frontend && npm run build`
-- Visual QA: Playwright screenshots for each deliverable
-- Integration: Test all components work together
 
 ## Evidence Storage
-- All screenshots to `.sisyphus/evidence/`
-- Naming: `task-{N}-{scenario}.png`
-- Final QA: `.sisyphus/evidence/final-qa/`
+	# Build verification: `make build`
+

@@ -15,10 +15,10 @@ import (
 )
 
 type OpenAIProvider struct {
-	apiKey   string
-	baseURL  string
-	model    string
-	timeout  time.Duration
+	apiKey  string
+	baseURL string
+	model   string
+	timeout time.Duration
 }
 
 func NewOpenAIProvider() *OpenAIProvider {
@@ -166,8 +166,13 @@ func parseDAGResponse(content string) (*GenerateResponse, error) {
 	content = strings.TrimSpace(content)
 	if strings.HasPrefix(content, "```") {
 		lines := strings.Split(content, "\n")
-		if len(lines) > 2 {
-			content = strings.Join(lines[1:len(lines)-1], "\n")
+		startIdx := 1
+		endIdx := len(lines)
+		if endIdx > 0 && strings.HasPrefix(strings.TrimSpace(lines[endIdx-1]), "```") {
+			endIdx--
+		}
+		if endIdx > startIdx {
+			content = strings.Join(lines[startIdx:endIdx], "\n")
 		}
 	}
 
