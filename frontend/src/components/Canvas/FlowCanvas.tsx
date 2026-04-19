@@ -16,15 +16,18 @@ import '@xyflow/react/dist/style.css'
 import { useFlowStore } from '@/store/flowStore'
 import { useSkillStore } from '@/store/skillStore'
 import { SkillNode } from './nodes/SkillNode'
+import { MCPNode } from './nodes/MCPNode'
 import { ConditionNode } from './nodes/ConditionNode'
 import { ParallelForkNode, ParallelJoinNode } from './nodes/GatewayNode'
 import { StartNode, EndNode } from './nodes/StartEndNode'
 import { CustomEdge } from './edges/CustomEdge'
 import { NodeDetailPanel } from './NodeDetailPanel'
 import { CanvasToolbar } from './CanvasToolbar'
+import { PromptInput } from '@/components/Prompt/PromptInput'
 
 const nodeTypes: NodeTypes = {
   skill: SkillNode,
+  mcp: MCPNode,
   condition: ConditionNode,
   parallel_fork: ParallelForkNode,
   parallel_join: ParallelJoinNode,
@@ -148,6 +151,11 @@ export function FlowCanvas() {
         {/* Top toolbar panel */}
         <Panel position="top-center">
           <CanvasToolbar />
+        </Panel>
+
+        {/* Bottom PromptInput panel */}
+        <Panel position="bottom-center" className="!mb-4">
+          <PromptInput />
         </Panel>
       </ReactFlow>
 
