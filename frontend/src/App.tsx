@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { ReactFlowProvider } from '@xyflow/react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { FlowCanvas } from '@/components/Canvas/FlowCanvas'
@@ -9,6 +10,8 @@ import { TemplateSelector } from '@/components/Execution/TemplateSelector'
 import { SettingsPanel } from '@/components/Settings/SettingsPanel'
 
 function App() {
+  const [settingsOpen, setSettingsOpen] = useState(false)
+
   return (
     <TooltipProvider delayDuration={300}>
       <ReactFlowProvider>
@@ -20,14 +23,14 @@ function App() {
 
           {/* Main canvas area */}
           <div className="flex-1 relative overflow-hidden">
-            <FlowCanvas />
+            <FlowCanvas onSettingsClick={() => setSettingsOpen(true)} />
             <ConflictPanel />
             <ExecutionPanel />
             <TemplateSelector />
           </div>
 
           {/* Settings panel (floating) */}
-          <SettingsPanel />
+          <SettingsPanel isOpen={settingsOpen} onOpenChange={setSettingsOpen} />
         </div>
       </ReactFlowProvider>
     </TooltipProvider>

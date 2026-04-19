@@ -12,7 +12,11 @@ import { applyDagreLayout } from '@/utils/dagLayout'
 import type { FlowNodeRecord, FlowEdgeRecord } from '@/types'
 import type { FlowNode, FlowEdge } from '@/store/flowStore'
 
-export function CanvasToolbar() {
+export interface CanvasToolbarProps {
+  onSettingsClick?: () => void
+}
+
+export function CanvasToolbar({ onSettingsClick }: CanvasToolbarProps) {
   const {
     flowId, flowName, nodes, edges, isDirty,
     setNodes, setEdges, setFlowId, setIsDirty,
@@ -108,7 +112,7 @@ export function CanvasToolbar() {
     <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl shadow-sm px-2 py-1.5">
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon-sm" aria-label="Settings">
+          <Button variant="ghost" size="icon-sm" aria-label="Settings" onClick={onSettingsClick}>
             <Settings className="h-4 w-4" />
           </Button>
         </TooltipTrigger>

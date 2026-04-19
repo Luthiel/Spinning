@@ -25,6 +25,10 @@ import { NodeDetailPanel } from './NodeDetailPanel'
 import { CanvasToolbar } from './CanvasToolbar'
 import { PromptInput } from '@/components/Prompt/PromptInput'
 
+export interface FlowCanvasProps {
+  onSettingsClick?: () => void
+}
+
 const nodeTypes: NodeTypes = {
   skill: SkillNode,
   mcp: MCPNode,
@@ -39,7 +43,7 @@ const edgeTypes: EdgeTypes = {
   customEdge: CustomEdge,
 }
 
-export function FlowCanvas() {
+export function FlowCanvas({ onSettingsClick }: FlowCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const {
     nodes,
@@ -150,7 +154,7 @@ export function FlowCanvas() {
 
         {/* Top toolbar panel */}
         <Panel position="top-center">
-          <CanvasToolbar />
+          <CanvasToolbar onSettingsClick={onSettingsClick} />
         </Panel>
 
         {/* Bottom PromptInput panel */}
