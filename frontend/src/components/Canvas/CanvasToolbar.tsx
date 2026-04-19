@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  Save, Play, Download, Upload, LayoutTemplate, Wand2,
+  Settings, Save, Play, Download, Upload, LayoutTemplate, Wand2,
   GitBranch, GitFork, GitMerge, Plus, AlertTriangle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -106,7 +106,15 @@ export function CanvasToolbar() {
 
   return (
     <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl shadow-sm px-2 py-1.5">
-      {/* Flow name */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon-sm" aria-label="Settings">
+            <Settings className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Settings</TooltipContent>
+      </Tooltip>
+
       <FlowNameEditor />
 
       <div className="w-px h-5 bg-slate-200 mx-1" />
