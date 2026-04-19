@@ -1,13 +1,15 @@
 import { useState, useRef } from 'react'
-import { Wand2, Loader2, Lightbulb, ChevronUp } from 'lucide-react'
+import { Wand2, Loader2, Lightbulb, ChevronUp, AlertCircle, RefreshCw, Zap, Bot } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { Card, CardContent } from '@/components/ui/card'
 import { useFlowStore } from '@/store/flowStore'
 import { useSkillStore } from '@/store/skillStore'
+import { useProviderStore } from '@/store/providerStore'
 import { flowsApi } from '@/services/api'
 import { applyDagreLayout } from '@/utils/dagLayout'
 import type { FlowNode, FlowEdge } from '@/store/flowStore'
-import type { FlowNodeData, FlowEdgeData } from '@/types'
+import type { FlowNodeData, FlowEdgeData, ProviderType } from '@/types'
 import { generateId } from '@/lib/utils'
 
 const EXAMPLES = [
@@ -17,20 +19,37 @@ const EXAMPLES = [
   'Load data from database, clean it, run statistical analysis, generate report',
 ]
 
+interface FallbackOption {
+  provider: ProviderType
+  label: string
+  icon: typeof Bot
+  description: string
+}
+
 export function PromptInput() {
   const [open, setOpen] = useState(false)
   const [prompt, setPrompt] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showFallback, setShowFallback] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const { setNodes, setEdges, flowId } = useFlowStore()
   const { skills } = useSkillStore()
+  const { selectedProvider, defaultFallback } = useProviderStore()
 
-  const handleGenerate = async () => {
+  const fallbackOptions: FallbackOption[] = [
+    { provider: 'openai', label: 'OpenAI', icon: Bot, description: 'Use OpenAI API' },
+    { provider: 'opencode', label: 'OpenCode', icon: Zap, description: 'Use OpenCode CLI' },
+    { provider: 'mock', label: 'Mock', icon: Zap, description: 'Use built-in generator' },
+  ].filter((opt): opt is FallbackOption => opt.provider !== selectedProvider)
+
+  const handleGenerate = async (useFallback?: ProviderType) => {
     if (!prompt.trim()) return
     setLoading(true)
     setError(null)
+    setShowFallback(false)
+    
     try {
       const result = await flowsApi.generate({
         prompt: prompt.trim(),
@@ -38,7 +57,6 @@ export function PromptInput() {
         context_skill_ids: skills.map((s) => s.id),
       })
 
-      // Convert API node records to ReactFlow nodes
       const rfNodes: FlowNode[] = result.nodes.map((n) => ({
         id: n.id,
         type: n.type,
@@ -53,6 +71,9 @@ export function PromptInput() {
           config: n.config || {},
           condition_expr: n.condition_expr,
           description: n.description,
+          mcp_server: n.mcp_server,
+          mcp_tool: n.mcp_tool,
+          mcp_config: n.mcp_config,
         } as FlowNodeData,
       }))
 
@@ -70,20 +91,30 @@ export function PromptInput() {
         } as FlowEdgeData,
       }))
 
-      // Apply auto layout
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const laid = applyDagreLayout(rfNodes as any, rfEdges as any)
       setNodes(laid as FlowNode[])
       setEdges(rfEdges)
 
       setPrompt('')
       setOpen(false)
-    } catch (e) {
-      setError('Failed to generate flow. Please check your API configuration.')
+    } catch (e: any) {
+      const errorMessage = e.response?.data?.error || e.message || 'Unknown error'
+      setError(errorMessage)
+      setShowFallback(true)
       console.error(e)
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleRetry = () => {
+    setShowFallback(false)
+    handleGenerate()
+  }
+
+  const handleUseFallback = (provider: ProviderType) => {
+    setShowFallback(false)
+    handleGenerate(provider)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -97,7 +128,7 @@ export function PromptInput() {
       <div className="border-t border-slate-200 bg-white p-2">
         <button
           onClick={() => { setOpen(true); setTimeout(() => textareaRef.current?.focus(), 50) }}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-slate-300 hover:border-blue-300 hover:bg-blue-50/50 transition-colors text-left"
+          className="w-80 flex items-center gap-2 px-3 py-2 rounded-xl border border-dashed border-slate-300 bg-white shadow-sm hover:border-blue-300 hover:bg-blue-50/50 transition-colors text-left"
         >
           <Wand2 className="h-4 w-4 text-slate-400 flex-shrink-0" />
           <span className="text-xs text-slate-400">Describe your flow with natural language...</span>
@@ -107,8 +138,7 @@ export function PromptInput() {
   }
 
   return (
-    <div className="border-t border-slate-200 bg-white">
-      {/* Header */}
+    <div className="rounded-xl border-t border-slate-200 bg-white shadow-sm">
       <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100">
         <div className="flex items-center gap-1.5">
           <Wand2 className="h-4 w-4 text-blue-500" />
@@ -120,7 +150,6 @@ export function PromptInput() {
       </div>
 
       <div className="p-3 space-y-2">
-        {/* Examples */}
         <div className="flex gap-1 flex-wrap">
           {EXAMPLES.slice(0, 2).map((ex) => (
             <button
@@ -134,7 +163,6 @@ export function PromptInput() {
           ))}
         </div>
 
-        {/* Input */}
         <Textarea
           ref={textareaRef}
           value={prompt}
@@ -145,14 +173,53 @@ export function PromptInput() {
         />
 
         {error && (
-          <p className="text-[10px] text-red-500">{error}</p>
+          <div className="space-y-2">
+            <p className="text-[10px] text-red-500 flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              {error}
+            </p>
+            
+            {showFallback && fallbackOptions.length > 0 && (
+              <Card className="bg-amber-50 border-amber-200">
+                <CardContent className="p-2 space-y-2">
+                  <p className="text-[10px] font-medium text-amber-700">
+                    Generation failed. Choose a fallback option:
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleRetry}
+                      disabled={loading}
+                      className="h-7 text-xs gap-1"
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                      Retry
+                    </Button>
+                    {fallbackOptions.map((opt) => (
+                      <Button
+                        key={opt.provider}
+                        size="sm"
+                        onClick={() => handleUseFallback(opt.provider)}
+                        disabled={loading}
+                        className="h-7 text-xs gap-1"
+                      >
+                        <opt.icon className="h-3 w-3" />
+                        {opt.label}
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
 
         <div className="flex items-center justify-between">
           <span className="text-[10px] text-slate-400">Ctrl+Enter to generate</span>
           <Button
             size="sm"
-            onClick={handleGenerate}
+            onClick={() => handleGenerate()}
             disabled={!prompt.trim() || loading}
             className="gap-1.5 h-7 text-xs"
           >
