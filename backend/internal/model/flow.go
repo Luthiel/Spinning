@@ -23,8 +23,11 @@ type Flow struct {
 type FlowNode struct {
 	ID            string  `gorm:"primaryKey" json:"id"`
 	FlowID        string  `gorm:"not null;index" json:"flow_id,omitempty"`
-	Type          string  `gorm:"not null" json:"type"` // skill|condition|parallel_fork|parallel_join|start|end
+	Type          string  `gorm:"not null" json:"type"` // skill|condition|parallel_fork|parallel_join|start|end|mcp
 	SkillID       string  `json:"skill_id,omitempty"`
+	MCPServer     string  `json:"mcp_server,omitempty"`     // MCP server name for mcp type nodes
+	MCPTool       string  `json:"mcp_tool,omitempty"`      // MCP tool name for mcp type nodes
+	MCPConfig     JSONMap `gorm:"type:text" json:"mcp_config,omitempty"` // MCP configuration
 	PositionX     float64 `json:"position_x"`
 	PositionY     float64 `json:"position_y"`
 	Config        JSONMap `gorm:"type:text" json:"config"`

@@ -1,0 +1,68 @@
+{
+  "active_plan": "/Users/ludwig/Projects/tools/Spinning/.sisyphus/plans/ai-flow-ui-adjustments.md",
+  "started_at": "2026-04-19T10:20:35.218Z",
+  "session_ids": [
+    "ses_25ae4a40dffef0T3N78JmycWsW"
+  ],
+  "session_origins": {
+    "ses_25ae4a40dffef0T3N78JmycWsW": "direct"
+  },
+  "plan_name": "ai-flow-ui-adjustments",
+  "agent": "atlas",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "Update App.tsx - Remove PromptInput from sidebar",
+      "session_id": "ses_25abc5cf7fferiMsQcBU8QKJ8T",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-04-19T10:23:17.878Z"
+    },
+    "todo:2": {
+      "task_key": "todo:2",
+      "task_label": "2",
+      "task_title": "Update SettingsPanel.tsx - Remove floating FAB, export modal trigger",
+      "session_id": "ses_25aba7438ffe4ZK5rCynLJb2hV",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-04-19T10:26:32.275Z"
+    },
+    "todo:3": {
+      "task_key": "todo:3",
+      "task_label": "3",
+      "task_title": "Update CanvasToolbar.tsx - Add Settings button at far left",
+      "session_id": "ses_25ab7bef2ffeUdg4sm6ZhOkDbV",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-04-19T10:28:36.568Z"
+    },
+    "todo:4": {
+      "task_key": "todo:4",
+      "task_label": "4",
+      "task_title": "Update PromptInput.tsx - Update styling for bottom-center positioning",
+      "session_id": "ses_25ab4bc94ffeFExPDFUQo0z8Ez",
+      "agent": "Sisyphus-Junior",
+      "category": "visual-engineering",
+      "updated_at": "2026-04-19T10:31:49.878Z"
+    },
+    "todo:5": {
+      "task_key": "todo:5",
+      "task_label": "5",
+      "task_title": "Update FlowCanvas.tsx - Add PromptInput to bottom-center Panel",
+      "session_id": "ses_25ab28355ffec2jaa6qx4WcRSY",
+      "agent": "Sisyphus-Junior",
+      "category": "visual-engineering",
+      "updated_at": "2026-04-19T10:34:16.671Z"
+    },
+    "todo:6": {
+      "task_key": "todo:6",
+      "task_label": "6",
+      "task_title": "Connect Settings button to SettingsPanel modal",
+      "session_id": "ses_25aaffc25ffekQQVi6JQj1goMy",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-04-19T10:38:15.581Z"
+    }
+  }
+}

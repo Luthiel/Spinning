@@ -55,6 +55,7 @@ export type FlowNodeType =
   | 'parallel_join'
   | 'start'
   | 'end'
+  | 'mcp'
 
 export type EdgeType = 'serial' | 'parallel' | 'conditional'
 
@@ -68,6 +69,10 @@ export interface FlowNodeData extends Record<string, unknown> {
   config: Record<string, unknown>
   // For condition nodes
   condition_expr?: string
+  // For MCP nodes
+  mcp_server?: string
+  mcp_tool?: string
+  mcp_config?: Record<string, unknown>
   // For display
   description?: string
   error_message?: string
@@ -99,6 +104,9 @@ export interface FlowNodeRecord {
   id: string
   type: FlowNodeType
   skill_id?: string
+  mcp_server?: string
+  mcp_tool?: string
+  mcp_config?: Record<string, unknown>
   position_x: number
   position_y: number
   config: Record<string, unknown>
@@ -301,4 +309,54 @@ export interface WSMessage {
   type: WSMessageType
   execution_id: string
   payload: Record<string, unknown>
+}
+
+// ============================================================
+// Provider Types
+// ============================================================
+
+export type ProviderType = 'openai' | 'opencode' | 'mock'
+
+export interface ProviderConfig {
+  type: ProviderType
+  name: string
+  api_key?: string
+  base_url?: string
+  model?: string
+  timeout?: number
+  cli_path?: string
+  default_fallback?: ProviderType
+  auto_sync_skills?: boolean
+  sync_interval_mins?: number
+}
+
+export interface SyncResult {
+  imported: number
+  updated: number
+  skipped: number
+  errors: number
+}
+
+export interface ExternalSkillSource {
+  name: string
+  type: string
+  path: string
+  skill_count: number
+  auto_sync: boolean
+}
+
+// ============================================================
+// Validation Types
+// ============================================================
+
+export interface ValidationError {
+  node_id: string
+  type: string
+  message: string
+  severity: string
+}
+
+export interface ValidationResult {
+  valid: boolean
+  errors: ValidationError[]
 }

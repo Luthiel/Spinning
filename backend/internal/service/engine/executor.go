@@ -176,6 +176,8 @@ func (e *Executor) runNode(ctx context.Context, node *model.FlowNode) (model.JSO
 	case "condition":
 		e.setNodeStatus(node.ID, "success", nil, 10)
 		return model.JSONMap{"result": true}, true
+	case "mcp":
+		return e.runMCPNode(ctx, node)
 	}
 
 	// Skill node — simulate execution
@@ -342,4 +344,47 @@ func generateID() string {
 		b[i] = chars[rand.Intn(len(chars))]
 	}
 	return string(b)
+}
+
+func (e *Executor) runMCPNode(ctx context.Context, node *model.FlowNode) (model.JSONMap, bool) {
+	mcpServer := node.MCPServer
+	mcpTool := node.MCPTool
+	nodeName := node.Label
+
+	if nodeName == "" {
+		nodeName = fmt.Sprintf("MCP: %s/%s", mcpServer, mcpTool)
+	}
+
+	e.setNodeStatus(node.ID, "running", nil, 0)
+	e.log(node.ID, nodeName, "info", fmt.Sprintf("Executing MCP tool: %s/%s", mcpServer, mcpTool), nil, nil)
+
+	delay := time.Duration(200+rand.Intn(800)) * time.Millisecond
+	select {
+	case <-ctx.Done():
+		e.setNodeStatus(node.ID, "error", fmt.Errorf("cancelled"), 0)
+		return nil, false
+	case <-time.After(delay):
+	}
+
+	if rand.Float64() < 0.05 {
+		errMsg := fmt.Sprintf("MCP tool execution failed: %s/%s", mcpServer, mcpTool)
+		e.setNodeStatus(node.ID, "error", fmt.Errorf(errMsg), delay.Milliseconds())
+		e.log(node.ID, nodeName, "error", errMsg, nil, nil)
+		return nil, false
+	}
+
+	output := model.JSONMap{
+		"status":     "success",
+		"mcp_server": mcpServer,
+		"mcp_tool":   mcpTool,
+		"duration_ms": delay.Milliseconds(),
+		"timestamp":  time.Now().Format(time.RFC3339),
+		"result":     fmt.Sprintf("Mock MCP result from %s", mcpTool),
+	}
+
+	durationMs := delay.Milliseconds()
+	e.setNodeStatus(node.ID, "success", nil, durationMs)
+	e.log(node.ID, nodeName, "info", fmt.Sprintf("MCP tool completed in %dms", durationMs), nil, output)
+
+	return output, true
 }

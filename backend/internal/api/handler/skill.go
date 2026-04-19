@@ -10,11 +10,12 @@ import (
 )
 
 type SkillHandler struct {
-	svc *service.SkillService
+	svc        *service.SkillService
+	syncSvc    *service.SkillSyncService
 }
 
-func NewSkillHandler(svc *service.SkillService) *SkillHandler {
-	return &SkillHandler{svc: svc}
+func NewSkillHandler(svc *service.SkillService, syncSvc *service.SkillSyncService) *SkillHandler {
+	return &SkillHandler{svc: svc, syncSvc: syncSvc}
 }
 
 func (h *SkillHandler) List(c *gin.Context) {
@@ -90,4 +91,18 @@ func (h *SkillHandler) Rankings(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, rankings)
+}
+
+func (h *SkillHandler) Sync(c *gin.Context) {
+	result, err := h.syncSvc.SyncFromOpenCode()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, result)
+}
+
+func (h *SkillHandler) ListExternalSources(c *gin.Context) {
+	sources := h.syncSvc.ListExternalSources()
+	c.JSON(http.StatusOK, sources)
 }

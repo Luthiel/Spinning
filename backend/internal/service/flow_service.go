@@ -209,3 +209,126 @@ func sanitizeFilename(s string) string {
 	r := strings.NewReplacer(" ", "_", "/", "-", "\\", "-", ":", "-")
 	return r.Replace(s)
 }
+
+type ValidationError struct {
+	NodeID   string `json:"node_id"`
+	Type     string `json:"type"`
+	Message  string `json:"message"`
+	Severity string `json:"severity"`
+}
+
+type ValidationResult struct {
+	Valid  bool             `json:"valid"`
+	Errors []ValidationError `json:"errors"`
+}
+
+func (s *FlowService) ValidateFlow(flow *model.Flow) *ValidationResult {
+	result := &ValidationResult{
+		Valid:  true,
+		Errors: []ValidationError{},
+	}
+
+	nodeMap := make(map[string]bool)
+	for _, node := range flow.Nodes {
+		nodeMap[node.ID] = true
+
+		if node.Type == "mcp" {
+			if node.MCPServer == "" {
+				result.Valid = false
+				result.Errors = append(result.Errors, ValidationError{
+					NodeID:   node.ID,
+					Type:    "mcp_missing_server",
+					Message: "MCP node is missing server configuration",
+					Severity: "high",
+				})
+			}
+			if node.MCPTool == "" {
+				result.Valid = false
+				result.Errors = append(result.Errors, ValidationError{
+					NodeID:   node.ID,
+					Type:    "mcp_missing_tool",
+					Message: "MCP node is missing tool configuration",
+					Severity: "high",
+				})
+			}
+		}
+
+		if node.Type == "skill" && node.SkillID == "" {
+			result.Valid = false
+			result.Errors = append(result.Errors, ValidationError{
+				NodeID:   node.ID,
+				Type:    "skill_missing_id",
+				Message: "Skill node is missing skill_id",
+				Severity: "high",
+			})
+		}
+
+		if node.Type == "condition" && node.ConditionExpr == "" {
+			result.Valid = false
+			result.Errors = append(result.Errors, ValidationError{
+				NodeID:   node.ID,
+				Type:    "condition_missing_expr",
+				Message: "Condition node is missing condition expression",
+				Severity: "medium",
+			})
+		}
+	}
+
+	hasStart := false
+	hasEnd := false
+	for _, node := range flow.Nodes {
+		if node.Type == "start" {
+			hasStart = true
+		}
+		if node.Type == "end" {
+			hasEnd = true
+		}
+	}
+
+	if !hasStart {
+		result.Valid = false
+		result.Errors = append(result.Errors, ValidationError{
+			NodeID:   "",
+			Type:    "missing_start_node",
+			Message: "Flow must have a start node",
+			Severity: "high",
+		})
+	}
+
+	if !hasEnd {
+		result.Valid = false
+		result.Errors = append(result.Errors, ValidationError{
+			NodeID:   "",
+			Type:    "missing_end_node",
+			Message: "Flow must have an end node",
+			Severity: "high",
+		})
+	}
+
+	edgeMap := make(map[string]int)
+	for _, edge := range flow.Edges {
+		edgeMap[edge.Source]++
+		edgeMap[edge.Target]++
+
+		if !nodeMap[edge.Source] {
+			result.Valid = false
+			result.Errors = append(result.Errors, ValidationError{
+				NodeID:   edge.ID,
+				Type:    "invalid_edge_source",
+				Message: fmt.Sprintf("Edge references non-existent source node: %s", edge.Source),
+				Severity: "high",
+			})
+		}
+		if !nodeMap[edge.Target] {
+			result.Valid = false
+			result.Errors = append(result.Errors, ValidationError{
+				NodeID:   edge.ID,
+				Type:    "invalid_edge_target",
+				Message: fmt.Sprintf("Edge references non-existent target node: %s", edge.Target),
+				Severity: "high",
+			})
+		}
+	}
+
+	return result
+}

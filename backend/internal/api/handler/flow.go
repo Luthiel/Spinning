@@ -126,7 +126,7 @@ func (h *FlowHandler) Generate(c *gin.Context) {
 		return
 	}
 
-	result, err := h.llmSvc.Generate(req, skills)
+	result, err := h.llmSvc.Generate(c.Request.Context(), req, skills)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

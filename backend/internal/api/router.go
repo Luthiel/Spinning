@@ -23,13 +23,14 @@ func NewRouter(db *gorm.DB) *gin.Engine {
 
 	// Services
 	skillSvc    := service.NewSkillService(db)
+	skillSyncSvc := service.NewSkillSyncService(db)
 	flowSvc     := service.NewFlowService(db)
 	conflictSvc := service.NewConflictService(db, skillSvc)
 	llmSvc      := service.NewLLMService()
 	wsHub       := engine.NewWSHub()
 
 	// Handlers
-	skillH    := handler.NewSkillHandler(skillSvc)
+	skillH    := handler.NewSkillHandler(skillSvc, skillSyncSvc)
 	flowH     := handler.NewFlowHandler(flowSvc, skillSvc, llmSvc, wsHub)
 	conflictH := handler.NewConflictHandler(conflictSvc)
 
@@ -42,6 +43,8 @@ func NewRouter(db *gorm.DB) *gin.Engine {
 			skills.POST("", skillH.Create)
 			skills.GET("/clusters", skillH.Clusters)
 			skills.GET("/rankings", skillH.Rankings)
+			skills.POST("/sync", skillH.Sync)
+			skills.GET("/sources", skillH.ListExternalSources)
 			skills.GET("/:id", skillH.Get)
 			skills.PUT("/:id", skillH.Update)
 			skills.DELETE("/:id", skillH.Delete)

@@ -10,6 +10,8 @@ import type {
   PromptGenerateResponse,
   FlowNodeRecord,
   FlowEdgeRecord,
+  ExternalSkillSource,
+  SyncResult,
 } from '@/types'
 
 const api = axios.create({
@@ -36,6 +38,12 @@ export const skillsApi = {
   clusters: () => api.get<SkillCluster[]>('/skills/clusters').then((r) => r.data),
 
   rankings: () => api.get<SkillRanking[]>('/skills/rankings').then((r) => r.data),
+
+  sync: (): Promise<SyncResult> =>
+    api.post<SyncResult>('/skills/sync').then((r) => r.data),
+
+  listSources: (): Promise<ExternalSkillSource[]> =>
+    api.get<ExternalSkillSource[]>('/skills/sources').then((r) => r.data),
 }
 
 // ── Flows ────────────────────────────────────────────────────

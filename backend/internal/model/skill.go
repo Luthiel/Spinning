@@ -67,6 +67,8 @@ type Skill struct {
 	ClusterID    *int        `json:"cluster_id,omitempty"`
 	ClusterLabel string      `json:"cluster_label,omitempty"`
 	RankScore    float64     `json:"rank_score"`
+	Source       string      `gorm:"default:'builtin'" json:"source"` // builtin|opencode|claude_code|etc
+	MCPConfig    JSONMap     `gorm:"type:text" json:"mcp_config,omitempty"`
 	CreatedAt    time.Time   `json:"created_at"`
 	UpdatedAt    time.Time   `json:"updated_at"`
 }
