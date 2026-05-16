@@ -78,3 +78,10 @@ Thumbs.db
 /backend/*.db
 /backend/*.sqlite
 /backend/*.sqlite3
+
+# SQLite WAL files
+/backend/data/*.db-shm
+/backend/data/*.db-wal
+
+# Vite cache
+frontend/.vite/
