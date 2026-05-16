@@ -68,9 +68,26 @@ type Skill struct {
 	ClusterLabel string      `json:"cluster_label,omitempty"`
 	RankScore    float64     `json:"rank_score"`
 	Source       string      `gorm:"default:'builtin'" json:"source"` // builtin|opencode|claude_code|etc
+	FileRoot     string      `json:"file_root,omitempty"`
 	MCPConfig    JSONMap     `gorm:"type:text" json:"mcp_config,omitempty"`
 	CreatedAt    time.Time   `json:"created_at"`
 	UpdatedAt    time.Time   `json:"updated_at"`
+}
+
+// SkillFileVersion stores a point-in-time snapshot of a managed skill file.
+type SkillFileVersion struct {
+	ID                   string     `gorm:"primaryKey" json:"id"`
+	SkillID              string     `gorm:"not null;index" json:"skill_id"`
+	Path                 string     `gorm:"not null;index" json:"path"`
+	Kind                 string     `json:"kind"`     // skill|reference|script
+	Language             string     `json:"language"` // markdown|shell|typescript|python|...
+	Content              string     `gorm:"type:text" json:"content"`
+	Hash                 string     `gorm:"index" json:"hash"`
+	Message              string     `json:"message,omitempty"`
+	Source               string     `json:"source"` // manual|llm|restore|initial
+	RestoreFromVersionID string     `json:"restore_from_version_id,omitempty"`
+	CreatedAt            time.Time  `json:"created_at"`
+	DeletedAt            *time.Time `gorm:"index" json:"deleted_at,omitempty"`
 }
 
 // SkillCluster represents a cluster of related skills
@@ -86,10 +103,10 @@ type SkillCluster struct {
 
 // SkillRanking is the ranking view of a skill
 type SkillRanking struct {
-	Skill            Skill   `json:"skill"`
-	Rank             int     `json:"rank"`
-	CallCount        int64   `json:"call_count"`
-	CapabilityScore  float64 `json:"capability_score"`
-	RankScore        float64 `json:"rank_score"`
-	Trend            string  `json:"trend"` // up|down|stable
+	Skill           Skill   `json:"skill"`
+	Rank            int     `json:"rank"`
+	CallCount       int64   `json:"call_count"`
+	CapabilityScore float64 `json:"capability_score"`
+	RankScore       float64 `json:"rank_score"`
+	Trend           string  `json:"trend"` // up|down|stable
 }

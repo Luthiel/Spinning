@@ -31,8 +31,8 @@ func NewExecutor(flow *model.Flow, skills map[string]*model.Skill, eventCh chan<
 	execID := generateID()
 	now := time.Now()
 	return &Executor{
-		flow:   flow,
-		skills: skills,
+		flow:    flow,
+		skills:  skills,
 		eventCh: eventCh,
 		execution: &model.FlowExecution{
 			ID:             execID,
@@ -85,9 +85,9 @@ func (e *Executor) Run(ctx context.Context) {
 
 	// Channel to signal a node is done
 	type nodeResult struct {
-		nodeID  string
-		success bool
-		output  model.JSONMap
+		nodeID string
+		status string
+		output model.JSONMap
 	}
 	resultCh := make(chan nodeResult, len(e.flow.Nodes))
 
@@ -100,6 +100,62 @@ func (e *Executor) Run(ctx context.Context) {
 	}
 
 	remaining := len(e.flow.Nodes)
+	hasError := false
+	hasBlocked := false
+
+	var markBlocked func(string, string)
+	markBlocked = func(nodeID, reason string) {
+		completedMu.Lock()
+		if completed[nodeID] {
+			completedMu.Unlock()
+			return
+		}
+		completed[nodeID] = true
+		remaining--
+		completedMu.Unlock()
+
+		hasBlocked = true
+		e.setNodeStatus(nodeID, "blocked", fmt.Errorf(reason), 0)
+		nodeName := nodeID
+		if node := nodeMap[nodeID]; node != nil && node.Label != "" {
+			nodeName = node.Label
+		}
+		e.log(nodeID, nodeName, "warn", reason, nil, nil)
+		for _, edge := range outEdges[nodeID] {
+			markBlocked(edge.Target, "Blocked because an upstream branch could not complete")
+		}
+	}
+
+	handleResult := func(res nodeResult) {
+		completedMu.Lock()
+		if completed[res.nodeID] {
+			completedMu.Unlock()
+			return
+		}
+		completed[res.nodeID] = true
+		completedMu.Unlock()
+		remaining--
+
+		switch res.status {
+		case "success":
+			for _, edge := range outEdges[res.nodeID] {
+				inDegree[edge.Target]--
+				if inDegree[edge.Target] == 0 && !completed[edge.Target] {
+					ready = append(ready, edge.Target)
+				}
+			}
+		case "disabled":
+			hasBlocked = true
+			for _, edge := range outEdges[res.nodeID] {
+				markBlocked(edge.Target, "Blocked because an upstream skill is disabled")
+			}
+		default:
+			hasError = true
+			for _, edge := range outEdges[res.nodeID] {
+				markBlocked(edge.Target, "Blocked because an upstream node failed")
+			}
+		}
+	}
 
 	for remaining > 0 {
 		// Launch all ready nodes concurrently
@@ -110,17 +166,7 @@ func (e *Executor) Run(ctx context.Context) {
 				e.finishExecution(false)
 				return
 			case res := <-resultCh:
-				completedMu.Lock()
-				completed[res.nodeID] = true
-				completedMu.Unlock()
-				remaining--
-				// Unlock downstream nodes
-				for _, edge := range outEdges[res.nodeID] {
-					inDegree[edge.Target]--
-					if inDegree[edge.Target] == 0 {
-						ready = append(ready, edge.Target)
-					}
-				}
+				handleResult(res)
 			}
 			continue
 		}
@@ -134,8 +180,8 @@ func (e *Executor) Run(ctx context.Context) {
 			go func(nid string) {
 				defer wg.Done()
 				node := nodeMap[nid]
-				output, success := e.runNode(ctx, node)
-				resultCh <- nodeResult{nodeID: nid, success: success, output: output}
+				output, status := e.runNode(ctx, node)
+				resultCh <- nodeResult{nodeID: nid, status: status, output: output}
 			}(nodeID)
 		}
 
@@ -146,38 +192,39 @@ func (e *Executor) Run(ctx context.Context) {
 				e.finishExecution(false)
 				return
 			case res := <-resultCh:
-				completedMu.Lock()
-				completed[res.nodeID] = true
-				completedMu.Unlock()
-				remaining--
-				for _, edge := range outEdges[res.nodeID] {
-					inDegree[edge.Target]--
-					if inDegree[edge.Target] == 0 {
-						ready = append(ready, edge.Target)
-					}
-				}
+				handleResult(res)
 			}
 		}
 	}
 
-	e.finishExecution(true)
+	e.finishExecutionStatus(hasError, hasBlocked)
 }
 
-func (e *Executor) runNode(ctx context.Context, node *model.FlowNode) (model.JSONMap, bool) {
+func (e *Executor) runNode(ctx context.Context, node *model.FlowNode) (model.JSONMap, string) {
 	if node == nil {
-		return nil, false
+		return nil, "error"
 	}
 
 	// Special node types don't need execution
 	switch node.Type {
 	case "start", "end", "parallel_fork", "parallel_join":
 		e.setNodeStatus(node.ID, "success", nil, 0)
-		return model.JSONMap{}, true
+		return model.JSONMap{}, "success"
 	case "condition":
 		e.setNodeStatus(node.ID, "success", nil, 10)
-		return model.JSONMap{"result": true}, true
+		return model.JSONMap{"result": true}, "success"
 	case "mcp":
 		return e.runMCPNode(ctx, node)
+	}
+
+	if node.Type == "skill" && !node.Enabled {
+		skillName := node.Label
+		if sk := e.skills[node.SkillID]; sk != nil {
+			skillName = sk.Name
+		}
+		e.setNodeStatus(node.ID, "disabled", fmt.Errorf("skill disabled"), 0)
+		e.log(node.ID, skillName, "warn", "Skill is disabled; blocking this branch", nil, nil)
+		return nil, "disabled"
 	}
 
 	// Skill node — simulate execution
@@ -195,7 +242,7 @@ func (e *Executor) runNode(ctx context.Context, node *model.FlowNode) (model.JSO
 	select {
 	case <-ctx.Done():
 		e.setNodeStatus(node.ID, "error", fmt.Errorf("cancelled"), 0)
-		return nil, false
+		return nil, "error"
 	case <-time.After(delay):
 	}
 
@@ -204,15 +251,15 @@ func (e *Executor) runNode(ctx context.Context, node *model.FlowNode) (model.JSO
 		errMsg := fmt.Sprintf("Simulated failure in %s", skillName)
 		e.setNodeStatus(node.ID, "error", fmt.Errorf(errMsg), delay.Milliseconds())
 		e.log(node.ID, skillName, "error", errMsg, nil, nil)
-		return nil, false
+		return nil, "error"
 	}
 
 	// Simulate output
 	output := model.JSONMap{
-		"status":     "success",
-		"skill":      skillName,
+		"status":      "success",
+		"skill":       skillName,
 		"duration_ms": delay.Milliseconds(),
-		"timestamp":  time.Now().Format(time.RFC3339),
+		"timestamp":   time.Now().Format(time.RFC3339),
 	}
 	if sk != nil && sk.OutputSchema != nil {
 		if props, ok := sk.OutputSchema["properties"].(map[string]interface{}); ok {
@@ -229,7 +276,7 @@ func (e *Executor) runNode(ctx context.Context, node *model.FlowNode) (model.JSO
 	e.log(node.ID, skillName, "info",
 		fmt.Sprintf("Skill completed in %dms", durationMs), nil, output)
 
-	return output, true
+	return output, "success"
 }
 
 func (e *Executor) setNodeStatus(nodeID, status string, err error, durationMs int64) {
@@ -250,8 +297,8 @@ func (e *Executor) setNodeStatus(nodeID, status string, err error, durationMs in
 	e.mu.Unlock()
 
 	payload := map[string]interface{}{
-		"node_id":    nodeID,
-		"status":     status,
+		"node_id":     nodeID,
+		"status":      status,
 		"duration_ms": durationMs,
 	}
 	if err != nil {
@@ -278,27 +325,43 @@ func (e *Executor) log(nodeID, nodeName, level, message string, input, output mo
 	e.mu.Unlock()
 
 	e.sendEvent("execution_log", map[string]interface{}{
-		"node_id":    nodeID,
-		"node_name":  nodeName,
-		"level":      level,
-		"message":    message,
-		"timestamp":  entry.Timestamp.Format(time.RFC3339Nano),
+		"node_id":   nodeID,
+		"node_name": nodeName,
+		"level":     level,
+		"message":   message,
+		"timestamp": entry.Timestamp.Format(time.RFC3339Nano),
 	})
 
 	log.Printf("[EXEC %s] [%s] %s: %s", e.execution.ID[:8], level, nodeName, message)
 }
 
 func (e *Executor) finishExecution(success bool) {
-	now := time.Now()
-	status := "completed"
-	if !success {
-		status = "failed"
+	if success {
+		e.finishExecutionWithStatus("completed")
+		return
 	}
+	e.finishExecutionWithStatus("failed")
+}
+
+func (e *Executor) finishExecutionStatus(hasError, hasBlocked bool) {
+	if hasError {
+		e.finishExecutionWithStatus("failed")
+		return
+	}
+	if hasBlocked {
+		e.finishExecutionWithStatus("blocked")
+		return
+	}
+	e.finishExecutionWithStatus("completed")
+}
+
+func (e *Executor) finishExecutionWithStatus(status string) {
+	now := time.Now()
 	e.execution.Status = status
 	e.execution.CompletedAt = &now
 
 	eventType := "execution_complete"
-	if !success {
+	if status == "failed" {
 		eventType = "execution_error"
 	}
 	e.sendEvent(eventType, map[string]interface{}{
@@ -346,7 +409,7 @@ func generateID() string {
 	return string(b)
 }
 
-func (e *Executor) runMCPNode(ctx context.Context, node *model.FlowNode) (model.JSONMap, bool) {
+func (e *Executor) runMCPNode(ctx context.Context, node *model.FlowNode) (model.JSONMap, string) {
 	mcpServer := node.MCPServer
 	mcpTool := node.MCPTool
 	nodeName := node.Label
@@ -362,7 +425,7 @@ func (e *Executor) runMCPNode(ctx context.Context, node *model.FlowNode) (model.
 	select {
 	case <-ctx.Done():
 		e.setNodeStatus(node.ID, "error", fmt.Errorf("cancelled"), 0)
-		return nil, false
+		return nil, "error"
 	case <-time.After(delay):
 	}
 
@@ -370,21 +433,21 @@ func (e *Executor) runMCPNode(ctx context.Context, node *model.FlowNode) (model.
 		errMsg := fmt.Sprintf("MCP tool execution failed: %s/%s", mcpServer, mcpTool)
 		e.setNodeStatus(node.ID, "error", fmt.Errorf(errMsg), delay.Milliseconds())
 		e.log(node.ID, nodeName, "error", errMsg, nil, nil)
-		return nil, false
+		return nil, "error"
 	}
 
 	output := model.JSONMap{
-		"status":     "success",
-		"mcp_server": mcpServer,
-		"mcp_tool":   mcpTool,
+		"status":      "success",
+		"mcp_server":  mcpServer,
+		"mcp_tool":    mcpTool,
 		"duration_ms": delay.Milliseconds(),
-		"timestamp":  time.Now().Format(time.RFC3339),
-		"result":     fmt.Sprintf("Mock MCP result from %s", mcpTool),
+		"timestamp":   time.Now().Format(time.RFC3339),
+		"result":      fmt.Sprintf("Mock MCP result from %s", mcpTool),
 	}
 
 	durationMs := delay.Milliseconds()
 	e.setNodeStatus(node.ID, "success", nil, durationMs)
 	e.log(node.ID, nodeName, "info", fmt.Sprintf("MCP tool completed in %dms", durationMs), nil, output)
 
-	return output, true
+	return output, "success"
 }

@@ -214,6 +214,95 @@ type ExternalSkillSource struct {
 	AutoSync   bool   `json:"auto_sync"`
 }
 
+type ExternalSkillCandidate struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	SourceType  string `json:"source_type"`
+	Path        string `json:"path"`
+	Imported    bool   `json:"imported"`
+	SkillID     string `json:"skill_id,omitempty"`
+}
+
+func (s *SkillSyncService) FindExternalSkills(query string) []ExternalSkillCandidate {
+	query = strings.ToLower(strings.TrimSpace(query))
+	if query == "" {
+		return nil
+	}
+
+	var candidates []ExternalSkillCandidate
+	for _, basePath := range s.detectOpenCodeSkillPaths() {
+		_ = filepath.WalkDir(basePath, func(path string, d fs.DirEntry, err error) error {
+			if err != nil || !d.IsDir() || path == basePath {
+				return nil
+			}
+			skill, err := s.parseSkillFromDirectory(path)
+			if err != nil || skill == nil {
+				return filepath.SkipDir
+			}
+			haystack := strings.ToLower(skill.Name + " " + skill.Description + " " + strings.Join(skill.Capabilities, " "))
+			if strings.Contains(haystack, query) {
+				var existing model.Skill
+				imported := s.db.First(&existing, "id = ?", skill.ID).Error == nil
+				candidate := ExternalSkillCandidate{
+					ID:          fmt.Sprintf("opencode:%s", path),
+					Name:        skill.Name,
+					Description: skill.Description,
+					SourceType:  "opencode",
+					Path:        path,
+					Imported:    imported,
+				}
+				if imported {
+					candidate.SkillID = existing.ID
+				}
+				candidates = append(candidates, candidate)
+			}
+			return filepath.SkipDir
+		})
+	}
+	return candidates
+}
+
+func (s *SkillSyncService) ImportFromPath(sourceType, dirPath string) (*model.Skill, error) {
+	if sourceType == "" {
+		sourceType = "opencode"
+	}
+	if sourceType != "opencode" {
+		return nil, fmt.Errorf("unsupported skill source: %s", sourceType)
+	}
+	if !s.pathAllowed(dirPath) {
+		return nil, fmt.Errorf("skill path is not in a configured source")
+	}
+	skill, err := s.parseSkillFromDirectory(dirPath)
+	if err != nil {
+		return nil, err
+	}
+	if skill == nil {
+		return nil, fmt.Errorf("no skill metadata found in %s", dirPath)
+	}
+	if _, err := s.upsertSkill(skill); err != nil {
+		return nil, err
+	}
+	return skill, nil
+}
+
+func (s *SkillSyncService) pathAllowed(dirPath string) bool {
+	abs, err := filepath.Abs(dirPath)
+	if err != nil {
+		return false
+	}
+	for _, base := range s.detectOpenCodeSkillPaths() {
+		absBase, err := filepath.Abs(base)
+		if err != nil {
+			continue
+		}
+		if abs == absBase || strings.HasPrefix(abs, absBase+string(filepath.Separator)) {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *SkillSyncService) ListExternalSources() []ExternalSkillSource {
 	sources := []ExternalSkillSource{}
 

@@ -3,7 +3,7 @@
 // ============================================================
 
 export type SkillStatus = 'active' | 'deprecated' | 'draft'
-export type NodeStatus = 'idle' | 'running' | 'success' | 'error' | 'skipped'
+export type NodeStatus = 'idle' | 'running' | 'success' | 'error' | 'skipped' | 'disabled' | 'blocked'
 
 export interface JSONSchema {
   type: string
@@ -66,6 +66,7 @@ export interface FlowNodeData extends Record<string, unknown> {
   skill?: Skill
   status: NodeStatus
   call_count: number
+  enabled: boolean
   config: Record<string, unknown>
   // For condition nodes
   condition_expr?: string
@@ -77,6 +78,7 @@ export interface FlowNodeData extends Record<string, unknown> {
   description?: string
   error_message?: string
   execution_time?: number
+  highlighted?: boolean
 }
 
 export interface FlowEdgeData extends Record<string, unknown> {
@@ -111,6 +113,7 @@ export interface FlowNodeRecord {
   position_y: number
   config: Record<string, unknown>
   status: NodeStatus
+  enabled: boolean
   call_count: number
   condition_expr?: string
   label?: string
@@ -185,7 +188,7 @@ export interface ConflictReport {
 // Execution Types
 // ============================================================
 
-export type ExecutionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+export type ExecutionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'blocked'
 
 export interface ExecutionLog {
   id: string
@@ -262,6 +265,60 @@ export interface FlowTemplate {
 }
 
 // ============================================================
+// Skill Files
+// ============================================================
+
+export interface SkillFileInfo {
+  path: string
+  name: string
+  kind: 'skill' | 'reference' | 'script'
+  language: string
+  size: number
+  hash: string
+  updated_at: string
+}
+
+export interface SkillFilesResponse {
+  skill_id: string
+  skill_file?: SkillFileInfo
+  references: SkillFileInfo[]
+  scripts: SkillFileInfo[]
+}
+
+export interface SkillFileContent {
+  path: string
+  kind: 'skill' | 'reference' | 'script'
+  language: string
+  content: string
+  hash: string
+  updated_at: string
+}
+
+export interface SkillFileVersion {
+  id: string
+  skill_id: string
+  path: string
+  kind: string
+  language: string
+  content: string
+  hash: string
+  message?: string
+  source: string
+  restore_from_version_id?: string
+  created_at: string
+  deleted_at?: string
+}
+
+export interface SkillFileEditProposal {
+  path: string
+  language: string
+  proposed_content: string
+  explanation: string
+  diff: string
+  base_hash: string
+}
+
+// ============================================================
 // API Response Types
 // ============================================================
 
@@ -292,6 +349,12 @@ export interface PromptGenerateResponse {
   nodes: FlowNodeRecord[]
   edges: FlowEdgeRecord[]
   explanation: string
+  confidence: number
+}
+
+export interface FlowChangePlan {
+  summary: string
+  changes: FlowChange[]
   confidence: number
 }
 
@@ -343,6 +406,21 @@ export interface ExternalSkillSource {
   path: string
   skill_count: number
   auto_sync: boolean
+}
+
+export interface ExternalSkillCandidate {
+  id: string
+  name: string
+  description: string
+  source_type: string
+  path: string
+  imported: boolean
+  skill_id?: string
+}
+
+export interface SkillFindResponse {
+  local: Skill[]
+  external: ExternalSkillCandidate[]
 }
 
 // ============================================================

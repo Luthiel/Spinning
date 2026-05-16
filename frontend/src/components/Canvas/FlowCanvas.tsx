@@ -99,7 +99,7 @@ export function FlowCanvas({ onSettingsClick }: FlowCanvasProps) {
         y: event.clientY - rect.top - 45,
       }
 
-      addSkillNode(skillId, skill.name, position)
+      addSkillNode(skillId, skill.name, position, skill)
     },
     [skills, addSkillNode]
   )
@@ -145,11 +145,15 @@ export function FlowCanvas({ onSettingsClick }: FlowCanvasProps) {
         <MiniMap
           className="!shadow-sm !border !border-slate-200 !rounded-lg !overflow-hidden"
           nodeColor={(node) => {
-            const status = (node.data as { status?: string })?.status
+            const data = node.data as { status?: string; enabled?: boolean }
+            if (data.enabled === false) return '#64748b'
+            const status = data?.status
             switch (status) {
               case 'running': return '#3b82f6'
               case 'success': return '#10b981'
               case 'error': return '#ef4444'
+              case 'blocked': return '#f59e0b'
+              case 'disabled': return '#64748b'
               default: return '#94a3b8'
             }
           }}

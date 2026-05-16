@@ -143,6 +143,7 @@ func (p *OpenCodeProvider) parseOutput(output string, skills []model.Skill) (*Ge
 		if result.Nodes[i].Config == nil {
 			result.Nodes[i].Config = model.JSONMap{}
 		}
+		result.Nodes[i].Enabled = true
 	}
 
 	if len(result.Nodes) == 0 {
@@ -189,7 +190,7 @@ func (p *OpenCodeProvider) fallbackParse(content string, skills []model.Skill) (
 	}
 
 	nodes := []model.FlowNode{
-		{ID: "start", Type: "start", Label: "Start", Config: model.JSONMap{}, Status: "idle"},
+		{ID: "start", Type: "start", Label: "Start", Config: model.JSONMap{}, Status: "idle", Enabled: true},
 	}
 	edges := []model.FlowEdge{}
 
@@ -203,6 +204,7 @@ func (p *OpenCodeProvider) fallbackParse(content string, skills []model.Skill) (
 			Label:   sk.Name,
 			Config:  model.JSONMap{},
 			Status:  "idle",
+			Enabled: true,
 		})
 		edges = append(edges, model.FlowEdge{
 			ID: fmt.Sprintf("e-%d", i+1), Source: prev, Target: nodeID, EdgeType: "serial",
@@ -210,7 +212,7 @@ func (p *OpenCodeProvider) fallbackParse(content string, skills []model.Skill) (
 		prev = nodeID
 	}
 
-	nodes = append(nodes, model.FlowNode{ID: "end", Type: "end", Label: "End", Config: model.JSONMap{}, Status: "idle"})
+	nodes = append(nodes, model.FlowNode{ID: "end", Type: "end", Label: "End", Config: model.JSONMap{}, Status: "idle", Enabled: true})
 	edges = append(edges, model.FlowEdge{
 		ID: fmt.Sprintf("e-%d", len(selectedSkills)+1), Source: prev, Target: "end", EdgeType: "serial",
 	})

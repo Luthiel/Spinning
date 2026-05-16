@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { addEdge, applyNodeChanges, applyEdgeChanges } from '@xyflow/react'
 import type { Node, Edge, NodeChange, EdgeChange, Connection } from '@xyflow/react'
-import type { FlowNodeData, FlowEdgeData, Flow, ConflictReport, NodeStatus } from '@/types'
+import type { FlowNodeData, FlowEdgeData, Flow, ConflictReport, NodeStatus, FlowChange, Skill } from '@/types'
 import { generateId } from '@/lib/utils'
 
 export type FlowNode = Node<FlowNodeData>
@@ -36,12 +36,15 @@ interface FlowState {
   onNodesChange: (changes: NodeChange<FlowNode>[]) => void
   onEdgesChange: (changes: EdgeChange<FlowEdge>[]) => void
   onConnect: (connection: Connection) => void
-  addSkillNode: (skillId: string, skillName: string, position: { x: number; y: number }) => void
+  addSkillNode: (skillId: string, skillName: string, position: { x: number; y: number }, skill?: Skill) => void
   addConditionNode: (position: { x: number; y: number }) => void
   addParallelForkNode: (position: { x: number; y: number }) => void
   addParallelJoinNode: (position: { x: number; y: number }) => void
   updateNodeStatus: (nodeId: string, status: NodeStatus, callCount?: number) => void
   updateNodeData: (nodeId: string, data: Partial<FlowNodeData>) => void
+  toggleNodeEnabled: (nodeId: string) => void
+  highlightNode: (nodeId: string) => void
+  applyFlowChanges: (changes: FlowChange[], skills: Skill[]) => void
   setConflicts: (conflicts: ConflictReport[]) => void
   setConflictPanelOpen: (open: boolean) => void
   setSelectedNodeId: (id: string | null) => void
@@ -61,6 +64,7 @@ const initialNodes: FlowNode[] = [
       type: 'start',
       label: 'Start',
       status: 'idle',
+      enabled: true,
       call_count: 0,
       config: {},
     },
@@ -118,7 +122,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     }))
   },
 
-  addSkillNode: (skillId, skillName, position) => {
+  addSkillNode: (skillId, skillName, position, skill) => {
     const newNode: FlowNode = {
       id: `skill-${generateId()}`,
       type: 'skill',
@@ -127,7 +131,9 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         type: 'skill',
         label: skillName,
         skill_id: skillId,
+        skill,
         status: 'idle',
+        enabled: true,
         call_count: 0,
         config: {},
       },
@@ -147,6 +153,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         type: 'condition',
         label: 'Condition',
         status: 'idle',
+        enabled: true,
         call_count: 0,
         config: {},
         condition_expr: '',
@@ -167,6 +174,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         type: 'parallel_fork',
         label: 'Parallel Fork',
         status: 'idle',
+        enabled: true,
         call_count: 0,
         config: {},
       },
@@ -186,6 +194,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         type: 'parallel_join',
         label: 'Parallel Join',
         status: 'idle',
+        enabled: true,
         call_count: 0,
         config: {},
       },
@@ -222,6 +231,102 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     }))
   },
 
+  toggleNodeEnabled: (nodeId) => {
+    set((state) => ({
+      nodes: state.nodes.map((n) =>
+        n.id === nodeId ? { ...n, data: { ...n.data, enabled: !n.data.enabled } } : n
+      ),
+      isDirty: true,
+    }))
+  },
+
+  highlightNode: (nodeId) => {
+    set((state) => ({
+      nodes: state.nodes.map((n) =>
+        n.id === nodeId ? { ...n, data: { ...n.data, highlighted: true } } : n
+      ),
+    }))
+    window.setTimeout(() => {
+      set((state) => ({
+        nodes: state.nodes.map((n) =>
+          n.id === nodeId ? { ...n, data: { ...n.data, highlighted: false } } : n
+        ),
+      }))
+    }, 2400)
+  },
+
+  applyFlowChanges: (changes, skills) => {
+    const skillsMap = Object.fromEntries(skills.map((s) => [s.id, s]))
+    set((state) => {
+      let nodes = [...state.nodes]
+      let edges = [...state.edges]
+      for (const change of changes) {
+        const payload = change.payload || {}
+        switch (change.type) {
+          case 'add_node': {
+            const skillId = payload.skill_id as string | undefined
+            nodes.push({
+              id: (payload.id as string) || change.target_id,
+              type: payload.type as string,
+              position: {
+                x: (payload.position_x as number) || 400,
+                y: (payload.position_y as number) || 300,
+              },
+              data: {
+                type: payload.type as FlowNodeData['type'],
+                label: (payload.label as string) || (payload.type as string),
+                skill_id: skillId,
+                skill: skillId ? skillsMap[skillId] : undefined,
+                status: 'idle',
+                enabled: payload.enabled !== false,
+                call_count: 0,
+                config: (payload.config as Record<string, unknown>) || {},
+                condition_expr: payload.condition_expr as string | undefined,
+                description: payload.description as string | undefined,
+              },
+            } as FlowNode)
+            break
+          }
+          case 'remove_node':
+            nodes = nodes.filter((n) => n.id !== change.target_id)
+            edges = edges.filter((e) => e.source !== change.target_id && e.target !== change.target_id)
+            break
+          case 'update_node':
+            nodes = nodes.map((n) =>
+              n.id === change.target_id ? { ...n, data: { ...n.data, ...payload } } : n
+            )
+            break
+          case 'add_edge':
+            edges.push({
+              id: (payload.id as string) || change.target_id,
+              source: payload.source as string,
+              target: payload.target as string,
+              sourceHandle: payload.source_handle as string | undefined,
+              targetHandle: payload.target_handle as string | undefined,
+              type: 'customEdge',
+              data: {
+                type: (payload.edge_type as FlowEdgeData['type']) || 'serial',
+                condition: payload.condition as string | undefined,
+                label: payload.label as string | undefined,
+              },
+            } as FlowEdge)
+            break
+          case 'remove_edge':
+            edges = edges.filter((e) => e.id !== change.target_id)
+            break
+          case 'update_edge':
+            edges = edges.map((e) =>
+              e.id === change.target_id
+                ? { ...e, data: { ...e.data, type: (payload.edge_type as FlowEdgeData['type']) || e.data?.type, condition: payload.condition as string | undefined, label: payload.label as string | undefined } }
+                : e
+            )
+            break
+        }
+      }
+      return { nodes, edges, isDirty: true }
+    })
+  },
+
   setConflicts: (conflicts) => set({ conflicts }),
   setConflictPanelOpen: (conflictPanelOpen) => set({ conflictPanelOpen }),
   setSelectedNodeId: (selectedNodeId) => set({ selectedNodeId }),
@@ -239,6 +344,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         skill_id: n.skill_id,
         skill: n.skill_id ? skillsMap[n.skill_id] : undefined,
         status: n.status,
+        enabled: n.enabled !== false,
         call_count: n.call_count,
         config: n.config,
         condition_expr: n.condition_expr,

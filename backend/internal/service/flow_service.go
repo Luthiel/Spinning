@@ -339,3 +339,174 @@ func (s *FlowService) ValidateFlow(flow *model.Flow) *ValidationResult {
 
 	return result
 }
+
+func (s *FlowService) PlanChanges(req PlanChangesRequest, skills []model.Skill) (*FlowChangePlan, error) {
+	prompt := strings.ToLower(strings.TrimSpace(req.Prompt))
+	if prompt == "" {
+		return nil, fmt.Errorf("prompt is required")
+	}
+
+	existingSkillIDs := map[string]bool{}
+	existingNodeIDs := map[string]bool{}
+	for _, node := range req.Nodes {
+		existingNodeIDs[node.ID] = true
+		if node.SkillID != "" {
+			existingSkillIDs[node.SkillID] = true
+		}
+	}
+
+	matched := []model.Skill{}
+	for _, sk := range skills {
+		if existingSkillIDs[sk.ID] {
+			continue
+		}
+		haystack := strings.ToLower(sk.Name + " " + sk.Description + " " + strings.Join(sk.Capabilities, " ") + " " + strings.Join(sk.Category, " "))
+		if strings.Contains(prompt, strings.ToLower(sk.Name)) || keywordOverlap(prompt, haystack) {
+			matched = append(matched, sk)
+			if len(matched) >= 3 {
+				break
+			}
+		}
+	}
+
+	if len(matched) == 0 {
+		return &FlowChangePlan{
+			Summary:    "No safe workflow changes were identified. Try naming a skill or capability more directly.",
+			Changes:    []model.FlowChange{},
+			Confidence: 0.2,
+		}, nil
+	}
+
+	insertSource, insertEnd, removeEdge := insertionPoint(req.Nodes, req.Edges)
+	changes := []model.FlowChange{}
+	prev := insertSource
+	baseX, baseY := nextNodePosition(req.Nodes)
+
+	if removeEdge != nil {
+		changes = append(changes, model.FlowChange{
+			Type:     "remove_edge",
+			TargetID: removeEdge.ID,
+		})
+	}
+
+	names := []string{}
+	for i, sk := range matched {
+		nodeID := uniqueNodeID(fmt.Sprintf("skill-%s", sanitizeSkillDir(sk.ID)), existingNodeIDs)
+		existingNodeIDs[nodeID] = true
+		names = append(names, sk.Name)
+		changes = append(changes, model.FlowChange{
+			Type:     "add_node",
+			TargetID: nodeID,
+			Payload: model.JSONMap{
+				"id":         nodeID,
+				"type":       "skill",
+				"skill_id":   sk.ID,
+				"label":      sk.Name,
+				"position_x": baseX + float64(i*260),
+				"position_y": baseY,
+				"config":     model.JSONMap{},
+				"status":     "idle",
+				"enabled":    true,
+			},
+		})
+		if prev != "" {
+			edgeID := "e-" + generateID()
+			changes = append(changes, model.FlowChange{
+				Type:     "add_edge",
+				TargetID: edgeID,
+				Payload: model.JSONMap{
+					"id":        edgeID,
+					"source":    prev,
+					"target":    nodeID,
+					"edge_type": "serial",
+				},
+			})
+		}
+		prev = nodeID
+	}
+
+	if insertEnd != "" && prev != "" {
+		edgeID := "e-" + generateID()
+		changes = append(changes, model.FlowChange{
+			Type:     "add_edge",
+			TargetID: edgeID,
+			Payload: model.JSONMap{
+				"id":        edgeID,
+				"source":    prev,
+				"target":    insertEnd,
+				"edge_type": "serial",
+			},
+		})
+	}
+
+	return &FlowChangePlan{
+		Summary:    "Add " + strings.Join(names, ", ") + " to the workflow and connect them into the main serial path.",
+		Changes:    changes,
+		Confidence: 0.65,
+	}, nil
+}
+
+func keywordOverlap(prompt, haystack string) bool {
+	for _, word := range strings.Fields(prompt) {
+		word = strings.Trim(word, ".,;:!?()[]{}\"'")
+		if len([]rune(word)) < 3 {
+			continue
+		}
+		if strings.Contains(haystack, word) {
+			return true
+		}
+	}
+	return false
+}
+
+func insertionPoint(nodes []model.FlowNode, edges []model.FlowEdge) (source string, end string, removeEdge *model.FlowEdge) {
+	for _, node := range nodes {
+		if node.Type == "end" {
+			end = node.ID
+			break
+		}
+	}
+	if end != "" {
+		for i := range edges {
+			if edges[i].Target == end {
+				return edges[i].Source, end, &edges[i]
+			}
+		}
+	}
+	for _, node := range nodes {
+		if node.Type == "start" {
+			return node.ID, end, nil
+		}
+	}
+	if len(nodes) > 0 {
+		return nodes[len(nodes)-1].ID, end, nil
+	}
+	return "", end, nil
+}
+
+func nextNodePosition(nodes []model.FlowNode) (float64, float64) {
+	if len(nodes) == 0 {
+		return 400, 300
+	}
+	maxX := nodes[0].PositionX
+	y := nodes[0].PositionY
+	for _, node := range nodes {
+		if node.PositionX >= maxX {
+			maxX = node.PositionX
+			y = node.PositionY
+		}
+	}
+	return maxX + 260, y
+}
+
+func uniqueNodeID(base string, existing map[string]bool) string {
+	if !existing[base] {
+		return base
+	}
+	for i := 2; ; i++ {
+		candidate := fmt.Sprintf("%s-%d", base, i)
+		if !existing[candidate] {
+			return candidate
+		}
+	}
+}

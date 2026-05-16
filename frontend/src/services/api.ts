@@ -6,11 +6,18 @@ import type {
   ConflictReport,
   SkillCluster,
   SkillRanking,
+  SkillFilesResponse,
+  SkillFileContent,
+  SkillFileVersion,
+  SkillFileEditProposal,
   PromptGenerateRequest,
   PromptGenerateResponse,
+  FlowChangePlan,
   FlowNodeRecord,
   FlowEdgeRecord,
   ExternalSkillSource,
+  SkillFindResponse,
+  ExternalSkillCandidate,
   SyncResult,
 } from '@/types'
 
@@ -44,6 +51,39 @@ export const skillsApi = {
 
   listSources: (): Promise<ExternalSkillSource[]> =>
     api.get<ExternalSkillSource[]>('/skills/sources').then((r) => r.data),
+
+  find: (q: string): Promise<SkillFindResponse> =>
+    api.get<SkillFindResponse>('/skills/find', { params: { q } }).then((r) => r.data),
+
+  importExternal: (candidate: Pick<ExternalSkillCandidate, 'source_type' | 'path'>): Promise<Skill> =>
+    api.post<Skill>('/skills/import', candidate).then((r) => r.data),
+
+  listFiles: (id: string): Promise<SkillFilesResponse> =>
+    api.get<SkillFilesResponse>(`/skills/${id}/files`).then((r) => r.data),
+
+  readFile: (id: string, path: string): Promise<SkillFileContent> =>
+    api.get<SkillFileContent>(`/skills/${id}/files/content`, { params: { path } }).then((r) => r.data),
+
+  saveFile: (id: string, payload: { path: string; content: string; base_hash?: string; message?: string }) =>
+    api.put<{ file: SkillFileContent; version: SkillFileVersion }>(`/skills/${id}/files/content`, payload).then((r) => r.data),
+
+  proposeFileEdit: (
+    id: string,
+    payload: { path: string; prompt: string; current_content: string; chat_history?: Record<string, unknown>[] }
+  ): Promise<SkillFileEditProposal> =>
+    api.post<SkillFileEditProposal>(`/skills/${id}/files/propose`, payload).then((r) => r.data),
+
+  listFileVersions: (id: string, path: string): Promise<SkillFileVersion[]> =>
+    api.get<SkillFileVersion[]>(`/skills/${id}/files/versions`, { params: { path } }).then((r) => r.data),
+
+  getFileVersion: (id: string, versionId: string): Promise<SkillFileVersion> =>
+    api.get<SkillFileVersion>(`/skills/${id}/files/versions/${versionId}`).then((r) => r.data),
+
+  restoreFileVersion: (id: string, versionId: string) =>
+    api.post<{ file: SkillFileContent; version: SkillFileVersion }>(`/skills/${id}/files/versions/${versionId}/restore`).then((r) => r.data),
+
+  deleteFileVersion: (id: string, versionId: string) =>
+    api.delete(`/skills/${id}/files/versions/${versionId}`),
 }
 
 // ── Flows ────────────────────────────────────────────────────
@@ -72,6 +112,14 @@ export const flowsApi = {
 
   generate: (req: PromptGenerateRequest) =>
     api.post<PromptGenerateResponse>('/flows/generate', req).then((r) => r.data),
+
+  planChanges: (req: {
+    prompt: string
+    flow_id?: string
+    nodes: FlowNodeRecord[]
+    edges: FlowEdgeRecord[]
+    context_skill_ids?: string[]
+  }) => api.post<FlowChangePlan>('/flows/plan-changes', req).then((r) => r.data),
 
   execute: (id: string, input?: Record<string, unknown>) =>
     api.post<{ execution_id: string }>(`/flows/${id}/execute`, { input }).then((r) => r.data),

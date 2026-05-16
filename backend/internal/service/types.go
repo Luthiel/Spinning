@@ -16,3 +16,17 @@ type GenerateResponse struct {
 	Explanation string           `json:"explanation"`
 	Confidence  float64          `json:"confidence"`
 }
+
+type PlanChangesRequest struct {
+	Prompt          string           `json:"prompt"`
+	FlowID          string           `json:"flow_id,omitempty"`
+	Nodes           []model.FlowNode `json:"nodes"`
+	Edges           []model.FlowEdge `json:"edges"`
+	ContextSkillIDs []string         `json:"context_skill_ids,omitempty"`
+}
+
+type FlowChangePlan struct {
+	Summary    string             `json:"summary"`
+	Changes    []model.FlowChange `json:"changes"`
+	Confidence float64            `json:"confidence"`
+}

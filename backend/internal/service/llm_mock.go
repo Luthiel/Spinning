@@ -46,7 +46,7 @@ func (p *MockProvider) Generate(ctx context.Context, req GenerateRequest, skills
 	}
 
 	nodes := []model.FlowNode{
-		{ID: "start", Type: "start", Label: "Start", Config: model.JSONMap{}, Status: "idle"},
+		{ID: "start", Type: "start", Label: "Start", Config: model.JSONMap{}, Status: "idle", Enabled: true},
 	}
 	edges := []model.FlowEdge{}
 
@@ -60,6 +60,7 @@ func (p *MockProvider) Generate(ctx context.Context, req GenerateRequest, skills
 			Label:   sk.Name,
 			Config:  model.JSONMap{},
 			Status:  "idle",
+			Enabled: true,
 		})
 		edges = append(edges, model.FlowEdge{
 			ID: fmt.Sprintf("e-%d", i+1), Source: prev, Target: nodeID, EdgeType: "serial",
@@ -67,7 +68,7 @@ func (p *MockProvider) Generate(ctx context.Context, req GenerateRequest, skills
 		prev = nodeID
 	}
 
-	nodes = append(nodes, model.FlowNode{ID: "end", Type: "end", Label: "End", Config: model.JSONMap{}, Status: "idle"})
+	nodes = append(nodes, model.FlowNode{ID: "end", Type: "end", Label: "End", Config: model.JSONMap{}, Status: "idle", Enabled: true})
 	edges = append(edges, model.FlowEdge{
 		ID: fmt.Sprintf("e-%d", len(picked)+1), Source: prev, Target: "end", EdgeType: "serial",
 	})

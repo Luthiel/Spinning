@@ -4,15 +4,15 @@ import "time"
 
 // Flow is the top-level orchestration flow
 type Flow struct {
-	ID          string     `gorm:"primaryKey" json:"id"`
-	Name        string     `gorm:"not null" json:"name"`
-	Description string     `json:"description"`
-	CreatedBy   string     `json:"created_by"`
-	Version     int        `gorm:"default:1" json:"version"`
+	ID          string      `gorm:"primaryKey" json:"id"`
+	Name        string      `gorm:"not null" json:"name"`
+	Description string      `json:"description"`
+	CreatedBy   string      `json:"created_by"`
+	Version     int         `gorm:"default:1" json:"version"`
 	Tags        StringSlice `gorm:"type:text" json:"tags"`
-	TemplateID  string     `json:"template_id,omitempty"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+	TemplateID  string      `json:"template_id,omitempty"`
+	CreatedAt   time.Time   `json:"created_at"`
+	UpdatedAt   time.Time   `json:"updated_at"`
 
 	// Associations
 	Nodes []FlowNode `gorm:"foreignKey:FlowID;constraint:OnDelete:CASCADE" json:"nodes"`
@@ -25,13 +25,14 @@ type FlowNode struct {
 	FlowID        string  `gorm:"not null;index" json:"flow_id,omitempty"`
 	Type          string  `gorm:"not null" json:"type"` // skill|condition|parallel_fork|parallel_join|start|end|mcp
 	SkillID       string  `json:"skill_id,omitempty"`
-	MCPServer     string  `json:"mcp_server,omitempty"`     // MCP server name for mcp type nodes
-	MCPTool       string  `json:"mcp_tool,omitempty"`      // MCP tool name for mcp type nodes
+	MCPServer     string  `json:"mcp_server,omitempty"`                  // MCP server name for mcp type nodes
+	MCPTool       string  `json:"mcp_tool,omitempty"`                    // MCP tool name for mcp type nodes
 	MCPConfig     JSONMap `gorm:"type:text" json:"mcp_config,omitempty"` // MCP configuration
 	PositionX     float64 `json:"position_x"`
 	PositionY     float64 `json:"position_y"`
 	Config        JSONMap `gorm:"type:text" json:"config"`
 	Status        string  `gorm:"default:'idle'" json:"status"`
+	Enabled       bool    `gorm:"default:true" json:"enabled"`
 	CallCount     int64   `json:"call_count"`
 	ConditionExpr string  `json:"condition_expr,omitempty"`
 	Label         string  `json:"label,omitempty"`
@@ -61,8 +62,8 @@ type FlowTemplate struct {
 	CreatedBy   string      `json:"created_by"`
 	Tags        StringSlice `gorm:"type:text" json:"tags"`
 	// Serialised nodes/edges
-	NodesJSON string `gorm:"type:text" json:"-"`
-	EdgesJSON string `gorm:"type:text" json:"-"`
+	NodesJSON string    `gorm:"type:text" json:"-"`
+	EdgesJSON string    `gorm:"type:text" json:"-"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -104,14 +105,14 @@ type NodeExecution struct {
 
 // ExecutionLog is a single log entry during an execution
 type ExecutionLog struct {
-	ID          string     `json:"id"`
-	ExecutionID string     `json:"execution_id"`
-	NodeID      string     `json:"node_id"`
-	NodeName    string     `json:"node_name"`
-	Level       string     `json:"level"` // info|warn|error|debug
-	Message     string     `json:"message"`
-	Timestamp   time.Time  `json:"timestamp"`
-	DurationMs  *int64     `json:"duration_ms,omitempty"`
-	Input       JSONMap    `json:"input,omitempty"`
-	Output      JSONMap    `json:"output,omitempty"`
+	ID          string    `json:"id"`
+	ExecutionID string    `json:"execution_id"`
+	NodeID      string    `json:"node_id"`
+	NodeName    string    `json:"node_name"`
+	Level       string    `json:"level"` // info|warn|error|debug
+	Message     string    `json:"message"`
+	Timestamp   time.Time `json:"timestamp"`
+	DurationMs  *int64    `json:"duration_ms,omitempty"`
+	Input       JSONMap   `json:"input,omitempty"`
+	Output      JSONMap   `json:"output,omitempty"`
 }

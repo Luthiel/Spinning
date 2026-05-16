@@ -70,6 +70,7 @@ export function TemplateSelector() {
           skill_id: n.skill_id,
           skill: n.skill_id ? skillsMap[n.skill_id] : undefined,
           status: 'idle' as const,
+          enabled: n.enabled !== false,
           call_count: 0,
           config: n.config || {},
           description: n.description,

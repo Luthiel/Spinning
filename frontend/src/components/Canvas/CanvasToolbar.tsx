@@ -33,6 +33,7 @@ export function CanvasToolbar() {
         position_y: n.position.y,
         config: n.data.config,
         status: n.data.status,
+        enabled: n.data.enabled !== false,
         call_count: n.data.call_count,
         condition_expr: n.data.condition_expr,
         label: n.data.label,

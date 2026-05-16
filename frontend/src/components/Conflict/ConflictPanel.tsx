@@ -105,6 +105,7 @@ function ConflictItem({ conflict }: { conflict: ConflictReport }) {
           label: n.label || n.type,
           skill_id: n.skill_id,
           status: n.status,
+          enabled: n.enabled !== false,
           call_count: n.call_count,
           config: n.config,
         },
@@ -219,6 +220,7 @@ export function ConflictPanel() {
         position_y: n.position.y,
         config: n.data.config,
         status: n.data.status,
+        enabled: n.data.enabled !== false,
         call_count: n.data.call_count,
         label: n.data.label,
       }))

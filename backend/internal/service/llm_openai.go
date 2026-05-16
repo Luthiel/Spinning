@@ -195,6 +195,7 @@ func parseDAGResponse(content string) (*GenerateResponse, error) {
 		if result.Nodes[i].Config == nil {
 			result.Nodes[i].Config = model.JSONMap{}
 		}
+		result.Nodes[i].Enabled = true
 	}
 
 	return &GenerateResponse{

@@ -43,6 +43,7 @@ func Init(dsn string) error {
 	// Auto-migrate all models
 	if err := DB.AutoMigrate(
 		&model.Skill{},
+		&model.SkillFileVersion{},
 		&model.Flow{},
 		&model.FlowNode{},
 		&model.FlowEdge{},

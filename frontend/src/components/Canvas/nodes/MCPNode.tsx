@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
-import { AlertCircle, CheckCircle2, Clock, Loader2, Plug } from 'lucide-react'
+import { AlertCircle, Ban, CheckCircle2, Clock, Loader2, Plug } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FlowNodeData } from '@/types'
 import type { FlowNode } from '@/store/flowStore'
@@ -35,6 +35,18 @@ const STATUS_CONFIG = {
     border: 'border-slate-200',
     bg: 'bg-slate-50',
     icon: null,
+  },
+  disabled: {
+    dot: 'bg-slate-400',
+    border: 'border-slate-300',
+    bg: 'bg-slate-100',
+    icon: <Ban className="h-3 w-3 text-slate-500" />,
+  },
+  blocked: {
+    dot: 'bg-amber-500',
+    border: 'border-amber-300',
+    bg: 'bg-amber-50',
+    icon: <Ban className="h-3 w-3 text-amber-600" />,
   },
 }
 

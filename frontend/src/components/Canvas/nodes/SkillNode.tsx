@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
-import { Activity, AlertCircle, CheckCircle2, Clock, Loader2, User } from 'lucide-react'
+import { Activity, AlertCircle, Ban, CheckCircle2, Clock, Loader2, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FlowNodeData } from '@/types'
 import type { FlowNode } from '@/store/flowStore'
@@ -36,6 +36,18 @@ const STATUS_CONFIG = {
     bg: 'bg-slate-50',
     icon: null,
   },
+  disabled: {
+    dot: 'bg-slate-400',
+    border: 'border-slate-300',
+    bg: 'bg-slate-100',
+    icon: <Ban className="h-3 w-3 text-slate-500" />,
+  },
+  blocked: {
+    dot: 'bg-amber-500',
+    border: 'border-amber-300',
+    bg: 'bg-amber-50',
+    icon: <Ban className="h-3 w-3 text-amber-600" />,
+  },
 }
 
 const SKILL_COLORS: Record<string, string> = {
@@ -57,6 +69,7 @@ export const SkillNode = memo(({ data, selected }: NodeProps<FlowNode>) => {
   const status = data.status || 'idle'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.idle
   const gradient = getCategoryGradient(data.skill)
+  const enabled = data.enabled !== false
 
   return (
     <div
@@ -65,7 +78,9 @@ export const SkillNode = memo(({ data, selected }: NodeProps<FlowNode>) => {
         cfg.border,
         cfg.bg,
         selected && 'ring-2 ring-blue-400 ring-offset-1',
-        status === 'running' && 'shadow-blue-100 shadow-md'
+        status === 'running' && 'shadow-blue-100 shadow-md',
+        !enabled && 'opacity-55 grayscale',
+        data.highlighted && 'ring-4 ring-amber-400 ring-offset-2 animate-pulse'
       )}
     >
       {/* Color header bar */}
@@ -99,6 +114,7 @@ export const SkillNode = memo(({ data, selected }: NodeProps<FlowNode>) => {
           {/* Status dot */}
           <div className="flex-shrink-0 flex flex-col items-end gap-1 mt-0.5">
             <div className={cn('w-2 h-2 rounded-full', cfg.dot)} />
+            {!enabled && <Ban className="h-3 w-3 text-slate-400" />}
           </div>
         </div>
 
