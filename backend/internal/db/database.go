@@ -44,6 +44,8 @@ func Init(dsn string) error {
 	if err := DB.AutoMigrate(
 		&model.Skill{},
 		&model.SkillFileVersion{},
+		&model.SkillEmbedding{},
+		&model.RouterConfig{},
 		&model.Flow{},
 		&model.FlowNode{},
 		&model.FlowEdge{},

@@ -29,11 +29,14 @@ func NewRouter(db *gorm.DB) *gin.Engine {
 	conflictSvc := service.NewConflictService(db, skillSvc)
 	llmSvc := service.NewLLMService()
 	wsHub := engine.NewWSHub()
+	embeddingSvc := service.NewEmbeddingService(db)
+	smartRouter := service.NewSmartRouter(db, embeddingSvc)
 
 	// Handlers
 	skillH := handler.NewSkillHandler(skillSvc, skillSyncSvc, skillFileSvc)
 	flowH := handler.NewFlowHandler(flowSvc, skillSvc, llmSvc, wsHub)
 	conflictH := handler.NewConflictHandler(conflictSvc)
+	routerH := handler.NewRouterHandler(smartRouter, embeddingSvc)
 
 	api := r.Group("/api")
 	{
@@ -89,6 +92,16 @@ func NewRouter(db *gorm.DB) *gin.Engine {
 		{
 			conflicts.POST("/detect", conflictH.Detect)
 			conflicts.POST("/:id/resolve", conflictH.ApplyResolution)
+		}
+
+		// Smart Router
+		routerGroup := api.Group("/router")
+		{
+			routerGroup.POST("/select", routerH.Select)
+			routerGroup.GET("/config", routerH.GetConfig)
+			routerGroup.PUT("/config", routerH.UpdateConfig)
+			routerGroup.POST("/simulate", routerH.Simulate)
+			routerGroup.POST("/refresh-embeddings", routerH.RefreshEmbeddings)
 		}
 	}
 
