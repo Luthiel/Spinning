@@ -13,7 +13,7 @@ import (
 )
 
 var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool { return true },
+	CheckOrigin:     func(r *http.Request) bool { return true },
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 }
@@ -126,12 +126,35 @@ func (h *FlowHandler) Generate(c *gin.Context) {
 		return
 	}
 
-	result, err := h.llmSvc.Generate(req, skills)
+	result, err := h.llmSvc.Generate(c.Request.Context(), req, skills)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, result)
+}
+
+func (h *FlowHandler) PlanChanges(c *gin.Context) {
+	var req service.PlanChangesRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if req.Prompt == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "prompt is required"})
+		return
+	}
+	skills, err := h.skillSvc.List("", "", "")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	plan, err := h.flowSvc.PlanChanges(req, skills)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, plan)
 }
 
 func (h *FlowHandler) Execute(c *gin.Context) {
@@ -145,7 +168,7 @@ func (h *FlowHandler) Execute(c *gin.Context) {
 	// Load all skills referenced in the flow
 	skillMap := map[string]*model.Skill{}
 	for _, node := range flow.Nodes {
-		if node.SkillID != "" {
+		if node.SkillID != "" && node.Enabled {
 			if _, ok := skillMap[node.SkillID]; !ok {
 				sk, err := h.skillSvc.Get(node.SkillID)
 				if err == nil {

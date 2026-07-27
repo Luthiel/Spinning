@@ -33,6 +33,7 @@ export function CanvasToolbar() {
         position_y: n.position.y,
         config: n.data.config,
         status: n.data.status,
+        enabled: n.data.enabled !== false,
         call_count: n.data.call_count,
         condition_expr: n.data.condition_expr,
         label: n.data.label,
@@ -106,7 +107,6 @@ export function CanvasToolbar() {
 
   return (
     <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl shadow-sm px-2 py-1.5">
-      {/* Flow name */}
       <FlowNameEditor />
 
       <div className="w-px h-5 bg-slate-200 mx-1" />

@@ -4,10 +4,10 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
+	"gorm.io/gorm"
 	"spinning/backend/internal/api/handler"
 	"spinning/backend/internal/service"
 	"spinning/backend/internal/service/engine"
-	"gorm.io/gorm"
 )
 
 func NewRouter(db *gorm.DB) *gin.Engine {
@@ -22,15 +22,17 @@ func NewRouter(db *gorm.DB) *gin.Engine {
 	}))
 
 	// Services
-	skillSvc    := service.NewSkillService(db)
-	flowSvc     := service.NewFlowService(db)
+	skillSvc := service.NewSkillService(db)
+	skillSyncSvc := service.NewSkillSyncService(db)
+	skillFileSvc := service.NewSkillFileService(db)
+	flowSvc := service.NewFlowService(db)
 	conflictSvc := service.NewConflictService(db, skillSvc)
-	llmSvc      := service.NewLLMService()
-	wsHub       := engine.NewWSHub()
+	llmSvc := service.NewLLMService()
+	wsHub := engine.NewWSHub()
 
 	// Handlers
-	skillH    := handler.NewSkillHandler(skillSvc)
-	flowH     := handler.NewFlowHandler(flowSvc, skillSvc, llmSvc, wsHub)
+	skillH := handler.NewSkillHandler(skillSvc, skillSyncSvc, skillFileSvc)
+	flowH := handler.NewFlowHandler(flowSvc, skillSvc, llmSvc, wsHub)
 	conflictH := handler.NewConflictHandler(conflictSvc)
 
 	api := r.Group("/api")
@@ -42,6 +44,18 @@ func NewRouter(db *gorm.DB) *gin.Engine {
 			skills.POST("", skillH.Create)
 			skills.GET("/clusters", skillH.Clusters)
 			skills.GET("/rankings", skillH.Rankings)
+			skills.POST("/sync", skillH.Sync)
+			skills.GET("/sources", skillH.ListExternalSources)
+			skills.GET("/find", skillH.Find)
+			skills.POST("/import", skillH.Import)
+			skills.GET("/:id/files", skillH.ListFiles)
+			skills.GET("/:id/files/content", skillH.ReadFile)
+			skills.PUT("/:id/files/content", skillH.SaveFile)
+			skills.POST("/:id/files/propose", skillH.ProposeFileEdit)
+			skills.GET("/:id/files/versions", skillH.ListFileVersions)
+			skills.GET("/:id/files/versions/:versionId", skillH.GetFileVersion)
+			skills.POST("/:id/files/versions/:versionId/restore", skillH.RestoreFileVersion)
+			skills.DELETE("/:id/files/versions/:versionId", skillH.DeleteFileVersion)
 			skills.GET("/:id", skillH.Get)
 			skills.PUT("/:id", skillH.Update)
 			skills.DELETE("/:id", skillH.Delete)
@@ -53,6 +67,7 @@ func NewRouter(db *gorm.DB) *gin.Engine {
 			flows.GET("", flowH.List)
 			flows.POST("", flowH.Create)
 			flows.POST("/generate", flowH.Generate)
+			flows.POST("/plan-changes", flowH.PlanChanges)
 			flows.GET("/:id", flowH.Get)
 			flows.PUT("/:id", flowH.Update)
 			flows.DELETE("/:id", flowH.Delete)

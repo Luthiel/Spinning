@@ -10,6 +10,8 @@ const STATUS_COLORS = {
   success: 'border-emerald-400 bg-emerald-50',
   error: 'border-red-400 bg-red-50',
   skipped: 'border-slate-200 bg-slate-50',
+  disabled: 'border-slate-300 bg-slate-100 opacity-60',
+  blocked: 'border-amber-400 bg-amber-100',
 }
 
 export const ConditionNode = memo(({ data, selected }: NodeProps<FlowNode>) => {

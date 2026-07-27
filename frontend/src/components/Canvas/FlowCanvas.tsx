@@ -11,20 +11,31 @@ import {
   type NodeMouseHandler,
   type EdgeMouseHandler,
 } from '@xyflow/react'
+import { Settings } from 'lucide-react'
 import '@xyflow/react/dist/style.css'
+
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 import { useFlowStore } from '@/store/flowStore'
 import { useSkillStore } from '@/store/skillStore'
 import { SkillNode } from './nodes/SkillNode'
+import { MCPNode } from './nodes/MCPNode'
 import { ConditionNode } from './nodes/ConditionNode'
 import { ParallelForkNode, ParallelJoinNode } from './nodes/GatewayNode'
 import { StartNode, EndNode } from './nodes/StartEndNode'
 import { CustomEdge } from './edges/CustomEdge'
 import { NodeDetailPanel } from './NodeDetailPanel'
 import { CanvasToolbar } from './CanvasToolbar'
+import { PromptInput } from '@/components/Prompt/PromptInput'
+
+export interface FlowCanvasProps {
+  onSettingsClick?: () => void
+}
 
 const nodeTypes: NodeTypes = {
   skill: SkillNode,
+  mcp: MCPNode,
   condition: ConditionNode,
   parallel_fork: ParallelForkNode,
   parallel_join: ParallelJoinNode,
@@ -36,7 +47,7 @@ const edgeTypes: EdgeTypes = {
   customEdge: CustomEdge,
 }
 
-export function FlowCanvas() {
+export function FlowCanvas({ onSettingsClick }: FlowCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const {
     nodes,
@@ -88,7 +99,7 @@ export function FlowCanvas() {
         y: event.clientY - rect.top - 45,
       }
 
-      addSkillNode(skillId, skill.name, position)
+      addSkillNode(skillId, skill.name, position, skill)
     },
     [skills, addSkillNode]
   )
@@ -134,11 +145,15 @@ export function FlowCanvas() {
         <MiniMap
           className="!shadow-sm !border !border-slate-200 !rounded-lg !overflow-hidden"
           nodeColor={(node) => {
-            const status = (node.data as { status?: string })?.status
+            const data = node.data as { status?: string; enabled?: boolean }
+            if (data.enabled === false) return '#64748b'
+            const status = data?.status
             switch (status) {
               case 'running': return '#3b82f6'
               case 'success': return '#10b981'
               case 'error': return '#ef4444'
+              case 'blocked': return '#f59e0b'
+              case 'disabled': return '#64748b'
               default: return '#94a3b8'
             }
           }}
@@ -147,7 +162,22 @@ export function FlowCanvas() {
 
         {/* Top toolbar panel */}
         <Panel position="top-center">
-          <CanvasToolbar />
+          <div className="flex items-center gap-2">
+            <CanvasToolbar />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon-sm" aria-label="Settings" onClick={onSettingsClick}>
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Settings</TooltipContent>
+            </Tooltip>
+          </div>
+        </Panel>
+
+        {/* Bottom PromptInput panel */}
+        <Panel position="bottom-center" className="!mb-4">
+          <PromptInput />
         </Panel>
       </ReactFlow>
 

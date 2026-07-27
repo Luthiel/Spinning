@@ -3,7 +3,7 @@
 // ============================================================
 
 export type SkillStatus = 'active' | 'deprecated' | 'draft'
-export type NodeStatus = 'idle' | 'running' | 'success' | 'error' | 'skipped'
+export type NodeStatus = 'idle' | 'running' | 'success' | 'error' | 'skipped' | 'disabled' | 'blocked'
 
 export interface JSONSchema {
   type: string
@@ -55,6 +55,7 @@ export type FlowNodeType =
   | 'parallel_join'
   | 'start'
   | 'end'
+  | 'mcp'
 
 export type EdgeType = 'serial' | 'parallel' | 'conditional'
 
@@ -65,13 +66,19 @@ export interface FlowNodeData extends Record<string, unknown> {
   skill?: Skill
   status: NodeStatus
   call_count: number
+  enabled: boolean
   config: Record<string, unknown>
   // For condition nodes
   condition_expr?: string
+  // For MCP nodes
+  mcp_server?: string
+  mcp_tool?: string
+  mcp_config?: Record<string, unknown>
   // For display
   description?: string
   error_message?: string
   execution_time?: number
+  highlighted?: boolean
 }
 
 export interface FlowEdgeData extends Record<string, unknown> {
@@ -99,10 +106,14 @@ export interface FlowNodeRecord {
   id: string
   type: FlowNodeType
   skill_id?: string
+  mcp_server?: string
+  mcp_tool?: string
+  mcp_config?: Record<string, unknown>
   position_x: number
   position_y: number
   config: Record<string, unknown>
   status: NodeStatus
+  enabled: boolean
   call_count: number
   condition_expr?: string
   label?: string
@@ -177,7 +188,7 @@ export interface ConflictReport {
 // Execution Types
 // ============================================================
 
-export type ExecutionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+export type ExecutionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'blocked'
 
 export interface ExecutionLog {
   id: string
@@ -254,6 +265,60 @@ export interface FlowTemplate {
 }
 
 // ============================================================
+// Skill Files
+// ============================================================
+
+export interface SkillFileInfo {
+  path: string
+  name: string
+  kind: 'skill' | 'reference' | 'script'
+  language: string
+  size: number
+  hash: string
+  updated_at: string
+}
+
+export interface SkillFilesResponse {
+  skill_id: string
+  skill_file?: SkillFileInfo
+  references: SkillFileInfo[]
+  scripts: SkillFileInfo[]
+}
+
+export interface SkillFileContent {
+  path: string
+  kind: 'skill' | 'reference' | 'script'
+  language: string
+  content: string
+  hash: string
+  updated_at: string
+}
+
+export interface SkillFileVersion {
+  id: string
+  skill_id: string
+  path: string
+  kind: string
+  language: string
+  content: string
+  hash: string
+  message?: string
+  source: string
+  restore_from_version_id?: string
+  created_at: string
+  deleted_at?: string
+}
+
+export interface SkillFileEditProposal {
+  path: string
+  language: string
+  proposed_content: string
+  explanation: string
+  diff: string
+  base_hash: string
+}
+
+// ============================================================
 // API Response Types
 // ============================================================
 
@@ -287,6 +352,12 @@ export interface PromptGenerateResponse {
   confidence: number
 }
 
+export interface FlowChangePlan {
+  summary: string
+  changes: FlowChange[]
+  confidence: number
+}
+
 // ============================================================
 // WebSocket Message Types
 // ============================================================
@@ -301,4 +372,69 @@ export interface WSMessage {
   type: WSMessageType
   execution_id: string
   payload: Record<string, unknown>
+}
+
+// ============================================================
+// Provider Types
+// ============================================================
+
+export type ProviderType = 'openai' | 'opencode' | 'mock'
+
+export interface ProviderConfig {
+  type: ProviderType
+  name: string
+  api_key?: string
+  base_url?: string
+  model?: string
+  timeout?: number
+  cli_path?: string
+  default_fallback?: ProviderType
+  auto_sync_skills?: boolean
+  sync_interval_mins?: number
+}
+
+export interface SyncResult {
+  imported: number
+  updated: number
+  skipped: number
+  errors: number
+}
+
+export interface ExternalSkillSource {
+  name: string
+  type: string
+  path: string
+  skill_count: number
+  auto_sync: boolean
+}
+
+export interface ExternalSkillCandidate {
+  id: string
+  name: string
+  description: string
+  source_type: string
+  path: string
+  imported: boolean
+  skill_id?: string
+}
+
+export interface SkillFindResponse {
+  local: Skill[]
+  external: ExternalSkillCandidate[]
+}
+
+// ============================================================
+// Validation Types
+// ============================================================
+
+export interface ValidationError {
+  node_id: string
+  type: string
+  message: string
+  severity: string
+}
+
+export interface ValidationResult {
+  valid: boolean
+  errors: ValidationError[]
 }

@@ -10,6 +10,8 @@ const STATUS_COLORS = {
   success: 'border-emerald-400 bg-emerald-50 text-emerald-600',
   error: 'border-red-400 bg-red-50 text-red-600',
   skipped: 'border-slate-200 bg-slate-50 text-slate-400',
+  disabled: 'border-slate-300 bg-slate-100 text-slate-500 opacity-60',
+  blocked: 'border-amber-400 bg-amber-100 text-amber-700',
 }
 
 export const ParallelForkNode = memo(({ data, selected }: NodeProps<FlowNode>) => {

@@ -16,6 +16,7 @@ const STATUS_COLORS = {
   completed: 'success',
   failed: 'destructive',
   cancelled: 'secondary',
+  blocked: 'warning',
 } as const
 
 function ExecutionStatus({ execution }: { execution: NonNullable<ReturnType<typeof useExecutionStore.getState>['currentExecution']> }) {
@@ -26,6 +27,7 @@ function ExecutionStatus({ execution }: { execution: NonNullable<ReturnType<type
   const nodeStats = Object.values(execution.node_executions)
   const completed = nodeStats.filter((n) => n.status === 'success').length
   const failed = nodeStats.filter((n) => n.status === 'error').length
+  const blocked = nodeStats.filter((n) => n.status === 'blocked' || n.status === 'disabled').length
   const running = nodeStats.filter((n) => n.status === 'running').length
 
   return (
@@ -42,10 +44,11 @@ function ExecutionStatus({ execution }: { execution: NonNullable<ReturnType<type
       </div>
 
       {/* Node stats */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         <StatBox label="Completed" value={completed} color="text-emerald-600" />
         <StatBox label="Running" value={running} color="text-blue-600" />
         <StatBox label="Failed" value={failed} color="text-red-500" />
+        <StatBox label="Blocked" value={blocked} color="text-amber-600" />
       </div>
 
       {/* Per-node statuses */}
@@ -97,6 +100,7 @@ function StatusDot({ status }: { status: string }) {
         status === 'running' && 'bg-blue-500 animate-pulse',
         status === 'success' && 'bg-emerald-500',
         status === 'error' && 'bg-red-500',
+        (status === 'blocked' || status === 'disabled') && 'bg-amber-500',
         (status === 'idle' || status === 'skipped') && 'bg-slate-300',
       )}
     />
@@ -109,6 +113,7 @@ const STATUS_BADGES = {
   completed: 'success',
   failed: 'destructive',
   cancelled: 'secondary',
+  blocked: 'warning',
 } as const
 
 export function ExecutionPanel() {
@@ -161,7 +166,10 @@ export function ExecutionPanel() {
           break
         }
         case 'execution_complete':
-          updateExecution({ status: 'completed', completed_at: new Date().toISOString() })
+          updateExecution({
+            status: (msg.payload.status as typeof currentExecution.status) || 'completed',
+            completed_at: new Date().toISOString(),
+          })
           setIsExecuting(false)
           wsService.disconnect()
           break
