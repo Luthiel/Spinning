@@ -67,6 +67,8 @@ type Skill struct {
 	ClusterID    *int        `json:"cluster_id,omitempty"`
 	ClusterLabel string      `json:"cluster_label,omitempty"`
 	RankScore    float64     `json:"rank_score"`
+	HealthScore  float64     `json:"health_score"` // 0-100, health score from health engine
+	TokenCost    int         `json:"token_cost"`   // estimated token cost for this skill
 	Source       string      `gorm:"default:'builtin'" json:"source"` // builtin|opencode|claude_code|etc
 	FileRoot     string      `json:"file_root,omitempty"`
 	MCPConfig    JSONMap     `gorm:"type:text" json:"mcp_config,omitempty"`
