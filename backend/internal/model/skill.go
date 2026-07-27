@@ -47,6 +47,28 @@ func (m *JSONMap) Scan(value interface{}) error {
 	return fmt.Errorf("cannot scan type %T into JSONMap", value)
 }
 
+// JSONFloatSlice is a JSON-serialized []float64 for SQLite storage
+type JSONFloatSlice []float64
+
+func (s JSONFloatSlice) Value() (driver.Value, error) {
+	b, err := json.Marshal(s)
+	return string(b), err
+}
+
+func (s *JSONFloatSlice) Scan(value interface{}) error {
+	if value == nil {
+		*s = JSONFloatSlice{}
+		return nil
+	}
+	switch v := value.(type) {
+	case string:
+		return json.Unmarshal([]byte(v), s)
+	case []byte:
+		return json.Unmarshal(v, s)
+	}
+	return fmt.Errorf("cannot scan type %T into JSONFloatSlice", value)
+}
+
 // Skill represents a single MCP-compatible skill
 type Skill struct {
 	ID           string      `gorm:"primaryKey" json:"id"`
@@ -70,8 +92,20 @@ type Skill struct {
 	Source       string      `gorm:"default:'builtin'" json:"source"` // builtin|opencode|claude_code|etc
 	FileRoot     string      `json:"file_root,omitempty"`
 	MCPConfig    JSONMap     `gorm:"type:text" json:"mcp_config,omitempty"`
-	CreatedAt    time.Time   `json:"created_at"`
-	UpdatedAt    time.Time   `json:"updated_at"`
+
+	// Health metrics — updated by executor feedback loop
+	Embedding     JSONFloatSlice `gorm:"type:text" json:"embedding,omitempty"`
+	SuccessRate   float64        `gorm:"default:1.0" json:"success_rate"`
+	AvgLatencyMs  int64          `json:"avg_latency_ms"`
+	TotalTokens   int64          `json:"total_tokens"`
+	ErrorCount    int64          `json:"error_count"`
+	LastUsedAt    *time.Time     `json:"last_used_at,omitempty"`
+	HealthScore   float64        `gorm:"default:0" json:"health_score"`
+	HealthGrade   string         `gorm:"default:'untested'" json:"health_grade"` // untested|poor|fair|good|excellent
+	CheckedAt     *time.Time     `json:"checked_at,omitempty"`
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // SkillFileVersion stores a point-in-time snapshot of a managed skill file.
