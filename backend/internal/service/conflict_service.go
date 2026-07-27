@@ -13,10 +13,16 @@ import (
 type ConflictService struct {
 	db          *gorm.DB
 	skillSvc    *SkillService
+	redundancyDetector *RedundancyDetector
 }
 
 func NewConflictService(db *gorm.DB, skillSvc *SkillService) *ConflictService {
 	return &ConflictService{db: db, skillSvc: skillSvc}
+}
+
+// NewConflictServiceWithDetector creates a ConflictService with a RedundancyDetector for registry-level detection
+func NewConflictServiceWithDetector(db *gorm.DB, skillSvc *SkillService, detector *RedundancyDetector) *ConflictService {
+	return &ConflictService{db: db, skillSvc: skillSvc, redundancyDetector: detector}
 }
 
 // Detect analyses the nodes+edges for conflicts and returns reports with resolution recommendations
@@ -87,6 +93,14 @@ func (c *ConflictService) Detect(flowID string, nodes []model.FlowNode, edges []
 	}
 
 	return reports, nil
+}
+
+// DetectRegistry performs global redundancy detection across all skills in the registry
+func (c *ConflictService) DetectRegistry() (*DetectResult, error) {
+	if c.redundancyDetector == nil {
+		return nil, fmt.Errorf("redundancy detector not initialized")
+	}
+	return c.redundancyDetector.DetectAll()
 }
 
 func (c *ConflictService) buildReport(

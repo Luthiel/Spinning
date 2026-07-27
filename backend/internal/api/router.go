@@ -26,14 +26,23 @@ func NewRouter(db *gorm.DB) *gin.Engine {
 	skillSyncSvc := service.NewSkillSyncService(db)
 	skillFileSvc := service.NewSkillFileService(db)
 	flowSvc := service.NewFlowService(db)
-	conflictSvc := service.NewConflictService(db, skillSvc)
 	llmSvc := service.NewLLMService()
 	wsHub := engine.NewWSHub()
+
+	// Embedding service (mock for now, can be replaced with real implementation)
+	embedSvc := service.NewMockEmbeddingService(128)
+
+	// Redundancy detector
+	redundancyDetector := service.NewRedundancyDetector(db, skillSvc, embedSvc)
+
+	// Conflict service with redundancy detection
+	conflictSvc := service.NewConflictServiceWithDetector(db, skillSvc, redundancyDetector)
 
 	// Handlers
 	skillH := handler.NewSkillHandler(skillSvc, skillSyncSvc, skillFileSvc)
 	flowH := handler.NewFlowHandler(flowSvc, skillSvc, llmSvc, wsHub)
 	conflictH := handler.NewConflictHandler(conflictSvc)
+	healthH := handler.NewHealthHandler(redundancyDetector)
 
 	api := r.Group("/api")
 	{
@@ -89,6 +98,13 @@ func NewRouter(db *gorm.DB) *gin.Engine {
 		{
 			conflicts.POST("/detect", conflictH.Detect)
 			conflicts.POST("/:id/resolve", conflictH.ApplyResolution)
+		}
+
+		// Health (including redundancy detection)
+		health := api.Group("/health")
+		{
+			health.GET("/redundancy", healthH.GetRedundancy)
+			health.POST("/redundancy/detect", healthH.DetectRedundancy)
 		}
 	}
 
