@@ -8,7 +8,7 @@ interface SkillState {
   loading: boolean
   searchQuery: string
   selectedCategory: string | null
-  viewMode: 'list' | 'cluster' | 'ranking'
+  viewMode: 'list' | 'cluster' | 'ranking' | 'health'
 
   setSkills: (skills: Skill[]) => void
   setClusters: (clusters: SkillCluster[]) => void
@@ -16,7 +16,7 @@ interface SkillState {
   setLoading: (loading: boolean) => void
   setSearchQuery: (query: string) => void
   setSelectedCategory: (cat: string | null) => void
-  setViewMode: (mode: 'list' | 'cluster' | 'ranking') => void
+  setViewMode: (mode: 'list' | 'cluster' | 'ranking' | 'health') => void
 
   filteredSkills: () => Skill[]
 }

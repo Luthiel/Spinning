@@ -19,6 +19,8 @@ import type {
   SkillFindResponse,
   ExternalSkillCandidate,
   SyncResult,
+  HealthHistoryResponse,
+  TimeRange,
 } from '@/types'
 
 const api = axios.create({
@@ -154,6 +156,12 @@ export const templatesApi = {
     api.post<FlowTemplate>('/templates', template).then((r) => r.data),
 
   delete: (id: string) => api.delete(`/templates/${id}`),
+}
+
+// ── Health ─────────────────────────────────────────────────
+export const healthApi = {
+  getHistory: (skillId: string, timeRange: TimeRange): Promise<HealthHistoryResponse> =>
+    api.get<HealthHistoryResponse>(`/skills/${skillId}/health/history`, { params: { time_range: timeRange } }).then((r) => r.data),
 }
 
 export default api
