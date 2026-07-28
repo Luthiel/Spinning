@@ -49,9 +49,16 @@ func Init(dsn string) error {
 		&model.FlowEdge{},
 		&model.FlowTemplate{},
 		&model.FlowExecution{},
+		&model.HealthReport{},
+		&model.RedundancyReport{},
 	); err != nil {
 		return err
 	}
+
+	// Create composite indexes for performance
+	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_redundancy_skills ON redundancy_reports (skill_a_id, skill_b_id)`)
+	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_health_skill_checked ON health_reports (skill_id, checked_at DESC)`)
+
 
 	log.Println("[DB] SQLite initialized:", dsn)
 	return nil
