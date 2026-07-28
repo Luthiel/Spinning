@@ -53,6 +53,12 @@ func Init(dsn string) error {
 		return err
 	}
 
+	// Ensure new columns exist for existing DBs (safe no-op if already present)
+	DB.Exec("ALTER TABLE skills ADD COLUMN IF NOT EXISTS error_count INTEGER DEFAULT 0")
+	DB.Exec("ALTER TABLE skills ADD COLUMN IF NOT EXISTS success_rate REAL DEFAULT 1.0")
+	DB.Exec("ALTER TABLE skills ADD COLUMN IF NOT EXISTS last_used_at DATETIME")
+	DB.Exec("ALTER TABLE skills ADD COLUMN IF NOT EXISTS embedding TEXT DEFAULT '[]'")
+
 	log.Println("[DB] SQLite initialized:", dsn)
 	return nil
 }

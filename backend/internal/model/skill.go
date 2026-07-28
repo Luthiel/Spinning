@@ -47,31 +47,57 @@ func (m *JSONMap) Scan(value interface{}) error {
 	return fmt.Errorf("cannot scan type %T into JSONMap", value)
 }
 
+// Float64Slice is a JSON-serialized []float64 for SQLite storage
+type Float64Slice []float64
+
+func (s Float64Slice) Value() (driver.Value, error) {
+	b, err := json.Marshal(s)
+	return string(b), err
+}
+
+func (s *Float64Slice) Scan(value interface{}) error {
+	if value == nil {
+		*s = Float64Slice{}
+		return nil
+	}
+	switch v := value.(type) {
+	case string:
+		return json.Unmarshal([]byte(v), s)
+	case []byte:
+		return json.Unmarshal(v, s)
+	}
+	return fmt.Errorf("cannot scan type %T into Float64Slice", value)
+}
+
 // Skill represents a single MCP-compatible skill
 type Skill struct {
-	ID           string      `gorm:"primaryKey" json:"id"`
-	Name         string      `gorm:"not null;index" json:"name"`
-	Description  string      `json:"description"`
-	Version      string      `json:"version"`
-	Author       string      `json:"author"`
-	OwnerTeam    string      `json:"owner_team"`
-	Category     StringSlice `gorm:"type:text" json:"category"`
-	InputSchema  JSONMap     `gorm:"type:text" json:"input_schema"`
-	OutputSchema JSONMap     `gorm:"type:text" json:"output_schema"`
-	Capabilities StringSlice `gorm:"type:text" json:"capabilities"`
-	ConflictTags StringSlice `gorm:"type:text" json:"conflict_tags"`
-	CallCount    int64       `json:"call_count"`
-	Status       string      `gorm:"default:'active'" json:"status"` // active|deprecated|draft
-	Icon         string      `json:"icon"`
-	Color        string      `json:"color"`
-	ClusterID    *int        `json:"cluster_id,omitempty"`
-	ClusterLabel string      `json:"cluster_label,omitempty"`
-	RankScore    float64     `json:"rank_score"`
-	Source       string      `gorm:"default:'builtin'" json:"source"` // builtin|opencode|claude_code|etc
-	FileRoot     string      `json:"file_root,omitempty"`
-	MCPConfig    JSONMap     `gorm:"type:text" json:"mcp_config,omitempty"`
-	CreatedAt    time.Time   `json:"created_at"`
-	UpdatedAt    time.Time   `json:"updated_at"`
+	ID           string       `gorm:"primaryKey" json:"id"`
+	Name         string       `gorm:"not null;index" json:"name"`
+	Description  string       `json:"description"`
+	Version      string       `json:"version"`
+	Author       string       `json:"author"`
+	OwnerTeam    string       `json:"owner_team"`
+	Category     StringSlice  `gorm:"type:text" json:"category"`
+	InputSchema  JSONMap      `gorm:"type:text" json:"input_schema"`
+	OutputSchema JSONMap      `gorm:"type:text" json:"output_schema"`
+	Capabilities StringSlice  `gorm:"type:text" json:"capabilities"`
+	ConflictTags StringSlice  `gorm:"type:text" json:"conflict_tags"`
+	CallCount    int64        `json:"call_count"`
+	ErrorCount   int64        `json:"error_count"`
+	SuccessRate  float64      `json:"success_rate"` // 0.0–1.0, default 1.0
+	LastUsedAt   *time.Time   `json:"last_used_at,omitempty"`
+	Status       string       `gorm:"default:'active'" json:"status"` // active|deprecated|draft
+	Icon         string       `json:"icon"`
+	Color        string       `json:"color"`
+	ClusterID    *int         `json:"cluster_id,omitempty"`
+	ClusterLabel string       `json:"cluster_label,omitempty"`
+	RankScore    float64      `json:"rank_score"`
+	Source       string       `gorm:"default:'builtin'" json:"source"` // builtin|opencode|claude_code|etc
+	FileRoot     string       `json:"file_root,omitempty"`
+	MCPConfig    JSONMap      `gorm:"type:text" json:"mcp_config,omitempty"`
+	Embedding    Float64Slice `gorm:"type:text" json:"embedding,omitempty"` // float64 vector, 128-dim
+	CreatedAt    time.Time    `json:"created_at"`
+	UpdatedAt    time.Time    `json:"updated_at"`
 }
 
 // SkillFileVersion stores a point-in-time snapshot of a managed skill file.
