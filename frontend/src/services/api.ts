@@ -19,6 +19,9 @@ import type {
   SkillFindResponse,
   ExternalSkillCandidate,
   SyncResult,
+  RouterConfig,
+  RouterSimulationRequest,
+  RouterSimulationResult,
 } from '@/types'
 
 const api = axios.create({
@@ -154,6 +157,17 @@ export const templatesApi = {
     api.post<FlowTemplate>('/templates', template).then((r) => r.data),
 
   delete: (id: string) => api.delete(`/templates/${id}`),
+}
+
+// ── Smart Router ────────────────────────────────────────────
+export const routerApi = {
+  getConfig: () => api.get<RouterConfig>('/router/config').then((r) => r.data),
+
+  updateConfig: (config: RouterConfig) =>
+    api.put<RouterConfig>('/router/config', config).then((r) => r.data),
+
+  simulate: (req: RouterSimulationRequest) =>
+    api.post<RouterSimulationResult>('/router/simulate', req).then((r) => r.data),
 }
 
 export default api

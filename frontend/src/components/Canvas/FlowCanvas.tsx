@@ -11,7 +11,7 @@ import {
   type NodeMouseHandler,
   type EdgeMouseHandler,
 } from '@xyflow/react'
-import { Settings } from 'lucide-react'
+import { Settings, Route } from 'lucide-react'
 import '@xyflow/react/dist/style.css'
 
 import { Button } from '@/components/ui/button'
@@ -31,6 +31,7 @@ import { PromptInput } from '@/components/Prompt/PromptInput'
 
 export interface FlowCanvasProps {
   onSettingsClick?: () => void
+  onRouterClick?: () => void
 }
 
 const nodeTypes: NodeTypes = {
@@ -47,7 +48,7 @@ const edgeTypes: EdgeTypes = {
   customEdge: CustomEdge,
 }
 
-export function FlowCanvas({ onSettingsClick }: FlowCanvasProps) {
+export function FlowCanvas({ onSettingsClick, onRouterClick }: FlowCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const {
     nodes,
@@ -164,6 +165,14 @@ export function FlowCanvas({ onSettingsClick }: FlowCanvasProps) {
         <Panel position="top-center">
           <div className="flex items-center gap-2">
             <CanvasToolbar />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon-sm" aria-label="Smart Router" onClick={onRouterClick}>
+                  <Route className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Smart Router</TooltipContent>
+            </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon-sm" aria-label="Settings" onClick={onSettingsClick}>
