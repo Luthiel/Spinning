@@ -424,6 +424,44 @@ export interface SkillFindResponse {
 }
 
 // ============================================================
+// Smart Router Types
+// ============================================================
+
+export interface RouterConfig {
+  token_budget: number
+  min_health_score: number
+  max_skills: number
+  dedup_threshold: number
+}
+
+export interface RouterPreset {
+  name: string
+  label: string
+  config: RouterConfig
+}
+
+export interface SimulatedSkill {
+  skill_id: string
+  name: string
+  grade: string
+  score: number
+  token_cost: number
+  selected: boolean
+  reason?: string
+}
+
+export interface RouterSimulationRequest {
+  prompt: string
+}
+
+export interface RouterSimulationResult {
+  selected: SimulatedSkill[]
+  filtered: SimulatedSkill[]
+  total_token_cost: number
+  budget_usage_percent: number
+}
+
+// ============================================================
 // Validation Types
 // ============================================================
 
