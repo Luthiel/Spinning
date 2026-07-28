@@ -424,6 +424,50 @@ export interface SkillFindResponse {
 }
 
 // ============================================================
+// Health Types
+// ============================================================
+
+export type HealthGrade = 'A' | 'B' | 'C' | 'D' | 'F'
+
+export interface HealthDimension {
+  name: string
+  score: number
+  weight: number
+}
+
+export interface HealthCheckEvent {
+  id: string
+  type: 'skill_update' | 'health_check_trigger' | 'manual_review' | 'auto_fix'
+  description: string
+  timestamp: string
+}
+
+export interface HealthSnapshot {
+  id: string
+  skill_id: string
+  health_score: number
+  grade: HealthGrade
+  dimensions: HealthDimension[]
+  events: HealthCheckEvent[]
+  checked_at: string
+  changes?: string
+}
+
+export interface HealthHistoryResponse {
+  skill_id: string
+  snapshots: HealthSnapshot[]
+  summary: {
+    avg_score: number
+    best_score: number
+    worst_score: number
+    trend: 'up' | 'down' | 'stable'
+    total_checks: number
+  }
+}
+
+export type TimeRange = '7d' | '30d' | '90d' | 'all'
+
+// ============================================================
 // Validation Types
 // ============================================================
 

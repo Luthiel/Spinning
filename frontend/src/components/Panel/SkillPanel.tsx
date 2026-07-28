@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Search, RefreshCw, BarChart2, Layers, List } from 'lucide-react'
+import { Search, RefreshCw, BarChart2, Layers, List, HeartPulse } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -10,6 +10,7 @@ import { useSkillStore } from '@/store/skillStore'
 import { skillsApi } from '@/services/api'
 import { SkillClusterView } from './SkillClusterView'
 import { SkillRankingView } from './SkillRankingView'
+import { SkillHealthView } from '@/components/Health/SkillHealthView'
 import { cn } from '@/lib/utils'
 import type { Skill } from '@/types'
 
@@ -180,6 +181,10 @@ export function SkillPanel() {
               <BarChart2 className="h-3 w-3 mr-1" />
               Rank
             </TabsTrigger>
+            <TabsTrigger value="health" className="flex-1 text-[11px] h-5">
+              <HeartPulse className="h-3 w-3 mr-1" />
+              Health
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="list">
@@ -235,6 +240,10 @@ export function SkillPanel() {
 
           <TabsContent value="ranking">
             <SkillRankingView />
+          </TabsContent>
+
+          <TabsContent value="health">
+            <SkillHealthView />
           </TabsContent>
         </Tabs>
       </div>
