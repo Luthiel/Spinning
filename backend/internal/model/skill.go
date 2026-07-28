@@ -110,3 +110,33 @@ type SkillRanking struct {
 	RankScore       float64 `json:"rank_score"`
 	Trend           string  `json:"trend"` // up|down|stable
 }
+
+// RedundancyReport stores a detected redundancy pair between two skills
+type RedundancyReport struct {
+	ID                  string    `gorm:"primaryKey" json:"id"`
+	SkillAID            string    `gorm:"not null;index" json:"skill_a_id"`
+	SkillAName          string    `json:"skill_a_name"`
+	SkillBID            string    `gorm:"not null;index" json:"skill_b_id"`
+	SkillBName          string    `json:"skill_b_name"`
+	CapabilityOverlap   float64   `json:"capability_overlap"`
+	SemanticSimilarity  float64   `json:"semantic_similarity"`
+	SchemaCompatibility float64   `json:"schema_compatibility"`
+	CombinedScore       float64   `json:"combined_score"`
+	Recommendation      string    `json:"recommendation"` // keep_better|clarify_positioning|human_review|keep_optimize
+	Reason              string    `json:"reason"`
+	CreatedAt           time.Time `json:"created_at"`
+}
+
+// HealthReport stores a health check result for a skill
+type HealthReport struct {
+	ID             string    `gorm:"primaryKey" json:"id"`
+	SkillID        string    `gorm:"not null;index" json:"skill_id"`
+	SkillName      string    `json:"skill_name"`
+	HealthScore    float64   `json:"health_score"`
+	HealthGrade    string    `json:"health_grade"` // A|B|C|D|F|untested
+	Dimensions     JSONMap   `gorm:"type:text" json:"dimensions"`
+	Issues         JSONMap   `gorm:"type:text" json:"issues"`
+	Recommendations JSONMap  `gorm:"type:text" json:"recommendations"`
+	CheckedAt      time.Time `json:"checked_at"`
+	DurationMs     int64     `json:"duration_ms"`
+}
