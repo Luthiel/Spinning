@@ -18,22 +18,31 @@ type WSEvent struct {
 	Payload     map[string]interface{} `json:"payload"`
 }
 
+// NodeCompleteFunc is called when a skill node finishes execution.
+type NodeCompleteFunc func(result NodeResult)
+
 // Executor runs a flow DAG
 type Executor struct {
-	flow      *model.Flow
-	skills    map[string]*model.Skill
-	execution *model.FlowExecution
-	eventCh   chan<- WSEvent
-	mu        sync.Mutex
+	flow           *model.Flow
+	skills         map[string]*model.Skill
+	execution      *model.FlowExecution
+	eventCh        chan<- WSEvent
+	onNodeComplete NodeCompleteFunc
+	mu             sync.Mutex
 }
 
 func NewExecutor(flow *model.Flow, skills map[string]*model.Skill, eventCh chan<- WSEvent) *Executor {
+	return NewExecutorWithCallback(flow, skills, eventCh, nil)
+}
+
+func NewExecutorWithCallback(flow *model.Flow, skills map[string]*model.Skill, eventCh chan<- WSEvent, onNodeComplete NodeCompleteFunc) *Executor {
 	execID := generateID()
 	now := time.Now()
 	return &Executor{
-		flow:    flow,
-		skills:  skills,
-		eventCh: eventCh,
+		flow:           flow,
+		skills:         skills,
+		eventCh:        eventCh,
+		onNodeComplete: onNodeComplete,
 		execution: &model.FlowExecution{
 			ID:             execID,
 			FlowID:         flow.ID,
@@ -249,8 +258,22 @@ func (e *Executor) runNode(ctx context.Context, node *model.FlowNode) (model.JSO
 	// 10% random failure rate for demo purposes
 	if rand.Float64() < 0.10 {
 		errMsg := fmt.Sprintf("Simulated failure in %s", skillName)
-		e.setNodeStatus(node.ID, "error", fmt.Errorf(errMsg), delay.Milliseconds())
+		durationMs := delay.Milliseconds()
+		e.setNodeStatus(node.ID, "error", fmt.Errorf(errMsg), durationMs)
 		e.log(node.ID, skillName, "error", errMsg, nil, nil)
+
+		// Fire the OnNodeComplete callback for health metric updates
+		if e.onNodeComplete != nil {
+			e.onNodeComplete(NodeResult{
+				SkillID:    node.SkillID,
+				SkillName:  skillName,
+				Success:    false,
+				LatencyMs:  durationMs,
+				TokensUsed: 0,
+				DurationMs: durationMs,
+			})
+		}
+
 		return nil, "error"
 	}
 
@@ -275,6 +298,18 @@ func (e *Executor) runNode(ctx context.Context, node *model.FlowNode) (model.JSO
 	e.setNodeStatus(node.ID, "success", nil, durationMs)
 	e.log(node.ID, skillName, "info",
 		fmt.Sprintf("Skill completed in %dms", durationMs), nil, output)
+
+	// Fire the OnNodeComplete callback for health metric updates
+	if e.onNodeComplete != nil {
+		e.onNodeComplete(NodeResult{
+			SkillID:    node.SkillID,
+			SkillName:  skillName,
+			Success:    true,
+			LatencyMs:  durationMs,
+			TokensUsed: 0, // simulated — no real LLM tokens in mock
+			DurationMs: durationMs,
+		})
+	}
 
 	return output, "success"
 }

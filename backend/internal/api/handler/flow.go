@@ -19,18 +19,20 @@ var upgrader = websocket.Upgrader{
 }
 
 type FlowHandler struct {
-	flowSvc  *service.FlowService
-	skillSvc *service.SkillService
-	llmSvc   *service.LLMService
-	wsHub    *engine.WSHub
+	flowSvc   *service.FlowService
+	skillSvc  *service.SkillService
+	healthSvc *service.HealthService
+	llmSvc    *service.LLMService
+	wsHub     *engine.WSHub
 }
 
-func NewFlowHandler(flowSvc *service.FlowService, skillSvc *service.SkillService, llmSvc *service.LLMService, wsHub *engine.WSHub) *FlowHandler {
+func NewFlowHandler(flowSvc *service.FlowService, skillSvc *service.SkillService, healthSvc *service.HealthService, llmSvc *service.LLMService, wsHub *engine.WSHub) *FlowHandler {
 	return &FlowHandler{
-		flowSvc:  flowSvc,
-		skillSvc: skillSvc,
-		llmSvc:   llmSvc,
-		wsHub:    wsHub,
+		flowSvc:   flowSvc,
+		skillSvc:  skillSvc,
+		healthSvc: healthSvc,
+		llmSvc:    llmSvc,
+		wsHub:     wsHub,
 	}
 }
 
@@ -179,7 +181,13 @@ func (h *FlowHandler) Execute(c *gin.Context) {
 	}
 
 	eventCh := make(chan engine.WSEvent, 100)
-	exec := engine.NewExecutor(flow, skillMap, eventCh)
+
+	// Create an OnNodeComplete callback that updates health metrics
+	onNodeComplete := func(result engine.NodeResult) {
+		h.healthSvc.UpdateSkillMetrics(result)
+	}
+
+	exec := engine.NewExecutorWithCallback(flow, skillMap, eventCh, onNodeComplete)
 	executionID := exec.ExecutionID()
 
 	// Start execution in background
@@ -195,11 +203,6 @@ func (h *FlowHandler) Execute(c *gin.Context) {
 			h.wsHub.Broadcast(executionID, event)
 		}
 	}()
-
-	// Increment call counts
-	for skillID := range skillMap {
-		h.skillSvc.IncrCallCount(skillID)
-	}
 
 	c.JSON(http.StatusOK, gin.H{"execution_id": executionID})
 }

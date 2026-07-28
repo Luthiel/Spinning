@@ -49,6 +49,7 @@ func Init(dsn string) error {
 		&model.FlowEdge{},
 		&model.FlowTemplate{},
 		&model.FlowExecution{},
+		&model.HealthReport{},
 	); err != nil {
 		return err
 	}

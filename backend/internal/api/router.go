@@ -27,13 +27,15 @@ func NewRouter(db *gorm.DB) *gin.Engine {
 	skillFileSvc := service.NewSkillFileService(db)
 	flowSvc := service.NewFlowService(db)
 	conflictSvc := service.NewConflictService(db, skillSvc)
+	healthSvc := service.NewHealthService(db)
 	llmSvc := service.NewLLMService()
 	wsHub := engine.NewWSHub()
 
 	// Handlers
 	skillH := handler.NewSkillHandler(skillSvc, skillSyncSvc, skillFileSvc)
-	flowH := handler.NewFlowHandler(flowSvc, skillSvc, llmSvc, wsHub)
+	flowH := handler.NewFlowHandler(flowSvc, skillSvc, healthSvc, llmSvc, wsHub)
 	conflictH := handler.NewConflictHandler(conflictSvc)
+	healthH := handler.NewHealthHandler(healthSvc)
 
 	api := r.Group("/api")
 	{
@@ -89,6 +91,13 @@ func NewRouter(db *gorm.DB) *gin.Engine {
 		{
 			conflicts.POST("/detect", conflictH.Detect)
 			conflicts.POST("/:id/resolve", conflictH.ApplyResolution)
+		}
+
+		// Health
+		health := api.Group("/health")
+		{
+			health.GET("/history/:skill_id", healthH.GetHealthHistory)
+			health.GET("/skill/:skill_id", healthH.GetSkillHealth)
 		}
 	}
 
