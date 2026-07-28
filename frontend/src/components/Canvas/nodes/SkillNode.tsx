@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
 import { Activity, AlertCircle, Ban, CheckCircle2, Clock, Loader2, User } from 'lucide-react'
+import { HealthIndicator } from '@/components/Health/HealthIndicator'
 import { cn } from '@/lib/utils'
 import type { FlowNodeData } from '@/types'
 import type { FlowNode } from '@/store/flowStore'
@@ -111,9 +112,19 @@ export const SkillNode = memo(({ data, selected }: NodeProps<FlowNode>) => {
             )}
           </div>
 
-          {/* Status dot */}
+          {/* Status + Health dots */}
           <div className="flex-shrink-0 flex flex-col items-end gap-1 mt-0.5">
-            <div className={cn('w-2 h-2 rounded-full', cfg.dot)} />
+            <div className="flex items-center gap-1">
+              {data.health_grade !== undefined && data.health_score !== undefined && (
+                <HealthIndicator
+                  grade={data.health_grade}
+                  score={data.health_score}
+                  size="sm"
+                  className="mr-0.5"
+                />
+              )}
+              <div className={cn('w-2 h-2 rounded-full', cfg.dot)} />
+            </div>
             {!enabled && <Ban className="h-3 w-3 text-slate-400" />}
           </div>
         </div>
