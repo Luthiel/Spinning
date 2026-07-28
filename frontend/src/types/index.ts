@@ -79,6 +79,9 @@ export interface FlowNodeData extends Record<string, unknown> {
   error_message?: string
   execution_time?: number
   highlighted?: boolean
+  // Health indicator
+  health_score?: number
+  health_grade?: HealthGrade
 }
 
 export interface FlowEdgeData extends Record<string, unknown> {
@@ -421,6 +424,57 @@ export interface ExternalSkillCandidate {
 export interface SkillFindResponse {
   local: Skill[]
   external: ExternalSkillCandidate[]
+}
+
+// ============================================================
+// Health Types
+// ============================================================
+
+export type HealthGrade = 'A' | 'B' | 'C' | 'D' | 'F' | 'untested'
+
+export interface HealthDimension {
+  name: string
+  score: number // 0-100
+  weight: number
+}
+
+export interface HealthIssue {
+  id: string
+  type: string
+  severity: 'critical' | 'warning' | 'info'
+  message: string
+  suggestion?: string
+}
+
+export interface SkillHealth {
+  skill_id: string
+  skill_name: string
+  score: number // 0-100
+  grade: HealthGrade
+  dimensions: HealthDimension[]
+  issues: HealthIssue[]
+  call_count: number
+  last_used_at?: string
+  checked_at: string
+}
+
+export interface HealthOverview {
+  total_skills: number
+  avg_health_score: number
+  redundant_pairs: number
+  critical_issues: number
+  long_unused_count: number
+}
+
+export interface GradeDistribution {
+  grade: HealthGrade
+  count: number
+  percentage: number
+}
+
+export interface HealthHistoryPoint {
+  checked_at: string
+  score: number
 }
 
 // ============================================================
