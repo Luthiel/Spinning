@@ -424,6 +424,53 @@ export interface SkillFindResponse {
 }
 
 // ============================================================
+// Redundancy Types
+// ============================================================
+
+export type RedundancySeverity = 'high' | 'medium' | 'low'
+export type RedundancyAction = 'differentiate' | 'keep_better' | 'keep_both'
+
+export interface RedundancyPair {
+  id: string
+  skill_a_id: string
+  skill_b_id: string
+  skill_a_name: string
+  skill_b_name: string
+  capability_overlap: number
+  semantic_similarity: number
+  severity: RedundancySeverity
+  recommended_action: RedundancyAction
+  created_at: string
+}
+
+export interface RedundancyNode {
+  id: string
+  name: string
+  health_level: 'healthy' | 'warning' | 'critical'
+  category: string[]
+  call_count: number
+}
+
+export interface RedundancyEdge {
+  source: string
+  target: string
+  similarity: number
+  severity: RedundancySeverity
+}
+
+export interface RedundancyMap {
+  nodes: RedundancyNode[]
+  edges: RedundancyEdge[]
+  pairs: RedundancyPair[]
+  generated_at: string
+}
+
+export interface RedundancyDetectResult {
+  pairs_found: number
+  map: RedundancyMap
+}
+
+// ============================================================
 // Validation Types
 // ============================================================
 

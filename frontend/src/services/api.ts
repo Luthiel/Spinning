@@ -19,6 +19,8 @@ import type {
   SkillFindResponse,
   ExternalSkillCandidate,
   SyncResult,
+  RedundancyMap,
+  RedundancyDetectResult,
 } from '@/types'
 
 const api = axios.create({
@@ -154,6 +156,15 @@ export const templatesApi = {
     api.post<FlowTemplate>('/templates', template).then((r) => r.data),
 
   delete: (id: string) => api.delete(`/templates/${id}`),
+}
+
+// ── Redundancy ───────────────────────────────────────────────
+export const redundancyApi = {
+  getMap: (): Promise<RedundancyMap> =>
+    api.get<RedundancyMap>('/health/redundancy').then((r) => r.data),
+
+  detect: (): Promise<RedundancyDetectResult> =>
+    api.post<RedundancyDetectResult>('/health/redundancy/detect').then((r) => r.data),
 }
 
 export default api
